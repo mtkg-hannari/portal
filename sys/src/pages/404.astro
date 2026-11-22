@@ -1,0 +1,25 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<Layout title="ページが見つかりません | はんなりdev" description="お探しのページは見つかりませんでした。" noindex>
+  <section class="mx-auto max-w-3xl px-5 py-24 text-center sm:px-8 sm:py-32">
+    <p class="text-sm font-medium tracking-[0.3em] text-[var(--accent)]">404</p>
+    <h1 class="mt-4 text-2xl font-medium tracking-[0.1em] text-[var(--deep)] sm:text-3xl">
+      ページが見つかりません
+    </h1>
+    <p class="mt-6 leading-loose text-[var(--text)]">
+      お探しのページは、移動または削除された可能性があります。
+    </p>
+    <p class="mt-10">
+      <a
+        href={base}
+        class="inline-block bg-[var(--deep)] px-7 py-3 text-sm font-medium tracking-[0.14em] text-white transition-colors hover:bg-[var(--accent)]"
+      >
+        トップページへ戻る
+      </a>
+    </p>
+  </section>
+</Layout>

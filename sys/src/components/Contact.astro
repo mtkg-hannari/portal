@@ -1,0 +1,29 @@
+---
+import Reveal from "./Reveal.astro";
+import SectionHeading from "./SectionHeading.astro";
+import InquiryForm from "./InquiryForm.tsx";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<section id="contact" class="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
+  <SectionHeading index="07" label="Contact" title="お問い合わせ" />
+  <div class="mt-10 max-w-3xl">
+    <Reveal>
+      <p class="leading-loose text-[var(--text)]">
+        開発のご相談、計画段階からのご相談など、お気軽にお寄せください。
+        内容を確認のうえ、ご入力いただいたメールアドレスへご連絡します。
+      </p>
+      <p class="mt-3 text-sm leading-loose text-[var(--dim)]">
+        ご入力いただいた内容は、お問い合わせへの対応のためにのみ利用します。詳しくは
+        <a class="text-[var(--accent)] underline underline-offset-4" href={`${base}privacy/`}
+          >プライバシーポリシー</a
+        >をご覧ください。
+      </p>
+    </Reveal>
+    <Reveal class="mt-10">
+      <!-- フォームは入力状態を持つため、ここだけ React（表示されたタイミングで読み込む） -->
+      <InquiryForm client:visible />
+    </Reveal>
+  </div>
+</section>

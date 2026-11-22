@@ -1,0 +1,12 @@
+---
+// スクロールで一度だけふわっと表示する枠。動作は Layout.astro の共通スクリプトが担当。
+interface Props {
+  class?: string;
+  delayMs?: number;
+}
+const { class: className = "", delayMs } = Astro.props;
+---
+
+<div class={`reveal ${className}`} style={delayMs ? `transition-delay:${delayMs}ms` : undefined}>
+  <slot />
+</div>

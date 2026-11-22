@@ -1,0 +1,68 @@
+import { ParallaxImage, Reveal, SectionHeading } from "./ui";
+const img = `${import.meta.env.BASE_URL}images/mco7-3.webp`;
+
+const SERVICES = [
+  {
+    no: "01",
+    title: "ソフトウェア・Web開発",
+    body: "業務システム、Webサービス、Webサイトの設計・開発を行います。要件定義から実装、公開後の保守までを一貫して担い、「作って終わり」にならない仕組みをお渡しします。",
+    items: ["業務システムの開発", "Webサービス・Webサイトの制作", "既存システムの改修・保守"],
+  },
+  {
+    no: "02",
+    title: "ITコンサルティング",
+    body: "開発に入る前の、計画づくりの段階を支援します。業務の棚卸しと要件の整理、技術選定、開発計画の策定など、「何を、どの順序で作るか」を一緒に決めていきます。",
+    items: ["要件定義・計画策定の支援", "技術選定・進め方の助言", "業務プロセスの整理"],
+  },
+];
+
+export function Services() {
+  return (
+    <section id="services" className="scroll-mt-36 bg-[var(--surface)] py-20 sm:py-28">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <SectionHeading index="02" label="Services" title="サービス" />
+        <div className="mt-10 grid gap-10 lg:grid-cols-5 lg:gap-14">
+          <div className="space-y-12 lg:col-span-3">
+            {SERVICES.map((service, i) => (
+              <Reveal key={service.no} delayMs={i * 100}>
+                <div className="border-l-2 border-[var(--accent-bright)] pl-6">
+                  <p className="text-sm font-medium tracking-[0.2em] text-[var(--accent)]">
+                    {service.no}
+                  </p>
+                  <h3 className="mt-2 text-xl font-medium tracking-[0.1em] text-[var(--deep)] sm:text-2xl">
+                    {service.title}
+                  </h3>
+                  <p className="mt-4 leading-loose text-[var(--text)]">{service.body}</p>
+                  <ul className="mt-5 space-y-2">
+                    {service.items.map((item) => (
+                      <li
+                        key={item}
+                        className="flex items-baseline gap-3 text-sm tracking-[0.06em] text-[var(--text)]"
+                      >
+                        <span aria-hidden="true" className="text-[var(--accent)]">
+                          —
+                        </span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal className="lg:col-span-2" delayMs={120}>
+            <ParallaxImage
+              src={img}
+              alt="建物の内観をモチーフとしたイラスト"
+              className="aspect-[4/3] w-full lg:aspect-auto lg:h-full lg:min-h-[420px]"
+              strength={16}
+            />
+            <p className="mt-3 text-xs tracking-[0.08em] text-[var(--dim)]">
+              内観のイラスト。外からは見えない構造の確かさが、使い心地を決めます。
+            </p>
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+}

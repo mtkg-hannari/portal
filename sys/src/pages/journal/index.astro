@@ -1,0 +1,58 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+
+const base = import.meta.env.BASE_URL;
+const posts = (await getCollection("journal", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+const fmt = new Intl.DateTimeFormat("ja-JP", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  timeZone: "Asia/Tokyo",
+});
+---
+
+<Layout
+  title="ジャーナル | はんなりdev"
+  description="はんなりdevが、設計・技術・仕事について日々考えたことを書き留めるジャーナルです。"
+  noindex={posts.length === 0}
+>
+  <section class="mx-auto max-w-4xl px-5 py-16 sm:px-8 sm:py-24">
+    <p class="text-xs font-medium uppercase tracking-[0.35em] text-[var(--dim)]">Journal</p>
+    <h1 class="mt-4 text-3xl font-medium tracking-[0.12em] text-[var(--deep)]">ジャーナル</h1>
+    <div class="mt-6 h-px w-full bg-[var(--border)]"></div>
+
+    {
+      posts.length === 0 ? (
+        <p class="mt-10 leading-loose text-[var(--text)]">記事は順次公開していきます。</p>
+      ) : (
+        <ul class="mt-4">
+          {posts.map((post) => (
+            <li class="border-b border-[var(--border)]">
+              <a href={`${base}journal/${post.id}/`} class="group block py-6">
+                <p class="text-sm tracking-[0.1em] text-[var(--dim)]">
+                  <time datetime={post.data.pubDate.toISOString()}>{fmt.format(post.data.pubDate)}</time>
+                  <span class="ml-3 text-xs uppercase tracking-[0.25em] text-[var(--accent)]">
+                    {post.data.category}
+                  </span>
+                </p>
+                <h2 class="mt-2 text-xl font-medium tracking-[0.08em] text-[var(--deep)] group-hover:text-[var(--accent)]">
+                  {post.data.title}
+                </h2>
+                <p class="mt-2 leading-relaxed text-[var(--dim)]">{post.data.description}</p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <p class="mt-12">
+      <a href={base} class="text-sm tracking-[0.14em] text-[var(--accent)] underline underline-offset-4"
+        >トップページへ戻る</a
+      >
+    </p>
+  </section>
+</Layout>

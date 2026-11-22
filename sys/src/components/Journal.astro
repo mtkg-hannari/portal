@@ -1,0 +1,96 @@
+---
+import { getCollection } from "astro:content";
+import Reveal from "./Reveal.astro";
+import SectionHeading from "./SectionHeading.astro";
+
+const base = import.meta.env.BASE_URL;
+
+const THEMES = [
+  {
+    label: "Design",
+    title: "設計の話",
+    body: "要件定義や画面設計、構造の考え方など、ものづくりの前段で考えていることを書きます。",
+  },
+  {
+    label: "Technology",
+    title: "技術の話",
+    body: "開発で使う技術や道具について、実際に検証したことや選定の理由をまとめます。",
+  },
+  {
+    label: "Work",
+    title: "仕事の話",
+    body: "小さな会社の開発の進め方や、案件を通じて学んだことを記録します。",
+  },
+];
+
+// 公開済みの最新記事（draft は除外）。1本もなければテーマ紹介のみ表示する。
+const posts = (await getCollection("journal", ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 3);
+
+const fmt = new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Tokyo" });
+---
+
+<section id="journal" class="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
+  <SectionHeading index="05" label="Journal" title="ジャーナル" />
+  <Reveal>
+    <p class="mt-8 max-w-2xl leading-loose text-[var(--text)]">
+      日々の仕事で考えたことを書き留める場所です。
+      {posts.length > 0 ? "最近の記事と、扱うテーマをご紹介します。" : "記事は順次公開していきます。ここでは、扱うテーマをご紹介します。"}
+    </p>
+  </Reveal>
+
+  {
+    posts.length > 0 && (
+      <ul class="mt-10 border-t border-[var(--border)]">
+        {posts.map((post) => (
+          <li class="border-b border-[var(--border)]">
+            <a
+              href={`${base}journal/${post.id}/`}
+              class="group block py-5 sm:grid sm:grid-cols-[180px_1fr] sm:gap-6"
+            >
+              <p class="text-sm tracking-[0.1em] text-[var(--dim)]">
+                <time datetime={post.data.pubDate.toISOString()}>{fmt.format(post.data.pubDate)}</time>
+                <span class="ml-3 text-xs uppercase tracking-[0.25em] text-[var(--accent)]">
+                  {post.data.category}
+                </span>
+              </p>
+              <div>
+                <p class="mt-1 text-lg font-medium tracking-[0.08em] text-[var(--deep)] group-hover:text-[var(--accent)] sm:mt-0">
+                  {post.data.title}
+                </p>
+                <p class="mt-1 text-sm leading-relaxed text-[var(--dim)]">{post.data.description}</p>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {
+    posts.length > 0 && (
+      <p class="mt-6">
+        <a
+          href={`${base}journal/`}
+          class="inline-block border border-[var(--deep)] px-6 py-3 text-sm font-medium tracking-[0.14em] text-[var(--deep)] transition-colors hover:bg-[var(--surface)]"
+        >
+          記事一覧を見る
+        </a>
+      </p>
+    )
+  }
+
+  <div class="mt-10 grid gap-6 md:grid-cols-3">
+    {
+      THEMES.map((theme, i) => (
+        <Reveal delayMs={i * 80}>
+          <article class="h-full border border-[var(--border)] bg-[var(--surface)] px-7 py-8">
+            <p class="text-xs font-medium uppercase tracking-[0.3em] text-[var(--accent)]">{theme.label}</p>
+            <h3 class="mt-3 text-lg font-medium tracking-[0.1em] text-[var(--deep)]">{theme.title}</h3>
+            <p class="mt-3 leading-loose text-[var(--text)]">{theme.body}</p>
+          </article>
+        </Reveal>
+      ))
+    }
+  </div>
+</section>

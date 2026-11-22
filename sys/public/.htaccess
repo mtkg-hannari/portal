@@ -1,0 +1,43 @@
+# さくらのレンタルサーバー（Apache）向けの設定。公開フォルダ直下に置かれます。
+# すべて IfModule で囲んであり、モジュールが無効な環境でもエラーにならない書き方です。
+# ※ ドメイン直下に置く前提です。サブフォルダに置く場合は ErrorDocument のパスを調整してください。
+
+# 独自の 404 ページ
+ErrorDocument 404 /404.html
+
+# 文字コード
+AddDefaultCharset UTF-8
+
+# 圧縮（HTML / CSS / JS / SVG / JSON）
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript text/javascript image/svg+xml application/json text/plain application/xml
+</IfModule>
+
+# ブラウザキャッシュ
+#  - /_astro/ 内のファイルは内容が変わるとファイル名も変わるため、長期キャッシュしてよい
+#  - HTML は更新がすぐ反映されるよう、キャッシュさせない
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 month"
+</IfModule>
+
+# セキュリティ関連ヘッダー
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# --- HTTPS への転送（独自ドメインで SSL 設定後に有効化してください） -------------
+# さくらのレンタルサーバーで一般的に使われる書き方です（要・動作確認）。
+# 契約中のプランの手順で動作を確認してから、先頭の「#」を外してください。
+# <IfModule mod_rewrite.c>
+#   RewriteEngine On
+#   RewriteCond %{HTTP:X-Sakura-Forwarded-For} ^$
+#   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+# </IfModule>

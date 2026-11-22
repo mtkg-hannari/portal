@@ -1,0 +1,48 @@
+---
+import Reveal from "./Reveal.astro";
+import ParallaxImage from "./ParallaxImage.astro";
+import heroImg from "../assets/images/mco7-1.webp";
+---
+
+<section id="top" class="mx-auto max-w-6xl px-5 pt-12 sm:px-8 sm:pt-20">
+  <Reveal>
+    <p class="text-xs font-medium uppercase tracking-[0.4em] text-[var(--accent)]">
+      Hannari Dev — Software &amp; Consulting
+    </p>
+    <h1
+      class="mt-6 max-w-3xl text-3xl font-medium leading-snug tracking-[0.08em] text-[var(--deep)] sm:text-5xl sm:leading-snug"
+    >
+      建物を設計するように、
+      <br />
+      システムを設計する。
+    </h1>
+    <p class="mt-7 max-w-2xl text-base leading-loose text-[var(--text)] sm:text-lg sm:leading-loose">
+      はんなりdevは、ソフトウェア・Web開発とITコンサルティングの小さな会社です。
+      要件を丁寧に読み解き、構造から考える設計で、長く使える仕組みをつくります。
+    </p>
+    <div class="mt-9 flex flex-wrap gap-4">
+      <a
+        href="#contact"
+        class="bg-[var(--deep)] px-7 py-3 text-sm font-medium tracking-[0.14em] text-white transition-colors hover:bg-[var(--accent)]"
+      >
+        お問い合わせ
+      </a>
+      <a
+        href="#services"
+        class="border border-[var(--deep)] px-7 py-3 text-sm font-medium tracking-[0.14em] text-[var(--deep)] transition-colors hover:bg-[var(--surface)]"
+      >
+        サービスを見る
+      </a>
+    </div>
+  </Reveal>
+
+  <Reveal class="mt-12 sm:mt-16" delayMs={150}>
+    <ParallaxImage
+      src={heroImg}
+      alt="建物の外観を描いたイラスト"
+      class="aspect-[4/5] w-full sm:aspect-[16/10]"
+      strength={26}
+      eager
+    />
+  </Reveal>
+</section>

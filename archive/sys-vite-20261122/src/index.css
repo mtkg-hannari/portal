@@ -1,0 +1,716 @@
+@import url('https://fonts.googleapis.com/css2?family=Hina+Mincho&family=Kaisei+Decol:wght@400;500;700&family=Kaisei+Opti:wght@400;500;700&family=Kiwi+Maru:wght@400;500&family=Kosugi&family=M+PLUS+Rounded+1c:wght@400;500;700&family=Murecho:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;500;600;700&family=Sawarabi+Gothic&family=Sawarabi+Mincho&family=Shippori+Antique&family=Shippori+Mincho:wght@400;500;600;700&family=Shippori+Mincho+B1:wght@400;500;600&family=Yuji+Syuku&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700&family=Zen+Old+Mincho:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 28px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 30px;
+  --text-3xl--line-height: 36px;
+  --text-4xl: 36px;
+  --text-4xl--line-height: 40px;
+  --text-5xl: 48px;
+  --text-5xl--line-height: 52px;
+}
+
+:root {
+  color-scheme: light;
+  --bg: #F2F8F3;            /* pale mint white */
+  --surface: #FFFFFF;       /* white */
+  --surface-alt: #DFF0E6;   /* pale mint band */
+  --text: #232620;          /* sumi ink */
+  --dim: #55645A;
+  --border: #BFDAC8;
+  --accent: #177A74;        /* turquoise, deepened for text contrast */
+  --accent-bright: #35C4B5;
+  --deep: #1E2B24;          /* sumi (green-tinted) — footer / dark structure */
+  --deep-ink: #131E18;
+  --field-bg: #FFFFFF;      /* form field background */
+  --error: #B3261E;         /* form error text */
+  --radius: 4px;
+  --space-surface: var(--surface);
+  --space-surface-alt: var(--surface-alt);
+  --space-muted: var(--dim);
+  --space-border: var(--border);
+  --space-accent: var(--accent);
+  --font-gothic: "Hiragino Kaku Gothic ProN", "Hiragino Sans",
+    "Yu Gothic UI", "Yu Gothic", "Noto Sans JP", sans-serif;
+  /* Theme 1 typography: neat gothic, wide letter-spacing (the original look). */
+  --font-heading: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", sans-serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", sans-serif;
+  --ls-body: 0.02em;
+}
+
+/* ------------------------------------------------------------------ */
+/* Colour themes 1-20 (this section: colours ONLY), switched via      */
+/* data-theme on <html>. Typography is independent: font sets 1-20    */
+/* live further below as [data-font] blocks, so any colour x font     */
+/* combination applies. Only the UI palette changes here; the mco-7   */
+/* illustrations are untouched. Body text vs background is >=7:1 in   */
+/* every theme. Fonts load from Google Fonts with strong system       */
+/* fallbacks, so the page never breaks if the webfont fails.          */
+/* ------------------------------------------------------------------ */
+
+/* 2. 空と若芽 — clear sky blue + fresh sprout green on a pale aqua-white ground; sumi structure. */
+[data-theme="ai-renga"] {
+  --bg: #F3F8F7;
+  --surface: #FFFFFF;
+  --surface-alt: #DDEEEA;
+  --text: #242A26;
+  --dim: #5A6862;
+  --border: #BFD9D2;
+  --accent: #256D85;
+  --accent-bright: #5BA8D9;
+  --deep: #202A30;
+  --deep-ink: #151E24;
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+}
+
+/* 3. 柑橘と月白 — moon-white ground with a light citrus (yamabuki-family) accent, deepened for text; sumi structure. */
+[data-theme="shinchuu-sumi"] {
+  --bg: #FDF8EC;
+  --surface: #FFFFFF;
+  --surface-alt: #F5EBCB;
+  --text: #26241F;
+  --dim: #655E4E;
+  --border: #DDD2A8;
+  --accent: #8A6410;
+  --accent-bright: #F2B705;
+  --deep: #26241F;
+  --deep-ink: #17150F;
+  --field-bg: #FFFFFF;
+  --error: #9C3A24;
+}
+
+/* 4. 珊瑚と白磁 — soft fresh coral on porcelain white; the old bordeaux register lightened away; sumi structure. */
+[data-theme="budou-tetsu"] {
+  --bg: #FFF6F1;
+  --surface: #FFFFFF;
+  --surface-alt: #FDE6DB;
+  --text: #2B2522;
+  --dim: #6B5E58;
+  --border: #EBCFC2;
+  --accent: #B44A32;
+  --accent-bright: #FF8A75;
+  --deep: #2A2320;
+  --deep-ink: #1C1714;
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+}
+
+/* 5. 若竹と月白 — fresh bamboo green / moon white, light and clean; sumi structure. */
+[data-theme="wakatake-geppaku"] {
+  --bg: #F4F9F2;
+  --surface: #FFFFFF;
+  --surface-alt: #E0EEDD;
+  --text: #263028;
+  --dim: #5A6B57;
+  --border: #C2D8BA;
+  --accent: #2E7D5B;
+  --accent-bright: #7FB069;
+  --deep: #222B20;
+  --deep-ink: #151D14;
+  --field-bg: #FFFFFF;
+  --error: #B3261E;
+}
+
+/* 6. 空と山吹 — clear sky blue with a yamabuki bright accent on warm white; sumi structure. */
+[data-theme="gunjou-kincha"] {
+  --bg: #F4F8FB;
+  --surface: #FFFFFF;
+  --surface-alt: #DFEAF2;
+  --text: #222A30;
+  --dim: #5A656E;
+  --border: #BFD2DE;
+  --accent: #2C5F8A;
+  --accent-bright: #F0B429;
+  --deep: #1F272E;
+  --deep-ink: #131A20;
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+}
+
+/* 7. 浅葱と白磁 — pale blue-green + porcelain white, light and clean; sumi structure. */
+[data-theme="asagi-hakuji"] {
+  --bg: #F2F8F8;
+  --surface: #FFFFFF;
+  --surface-alt: #DDECEA;
+  --text: #22302E;
+  --dim: #56706C;
+  --border: #B9D6D2;
+  --accent: #1E7A6E;
+  --accent-bright: #63B3AC;
+  --deep: #1E2A28;
+  --deep-ink: #121C1A;
+  --field-bg: #FFFFFF;
+  --error: #B3261E;
+}
+
+/* 8. 杏と白磁 — fresh apricot on porcelain white; text accent deepened one step; sumi structure. */
+[data-theme="suou-ama"] {
+  --bg: #FFF8F0;
+  --surface: #FFFFFF;
+  --surface-alt: #FDEBD6;
+  --text: #2E2822;
+  --dim: #6B6054;
+  --border: #EAD3B5;
+  --accent: #A8541A;
+  --accent-bright: #F5A65B;
+  --deep: #28211B;
+  --deep-ink: #1A140F;
+  --field-bg: #FFFFFF;
+  --error: #9C2F1E;
+}
+
+/* 9. 若草と白磁 — young-grass green on porcelain white; sumi structure. */
+[data-theme="koke-ishidatami"] {
+  --bg: #F5F8EE;
+  --surface: #FFFFFF;
+  --surface-alt: #E4EECD;
+  --text: #252B20;
+  --dim: #5D6850;
+  --border: #C6D4A8;
+  --accent: #56702C;
+  --accent-bright: #A8C686;
+  --deep: #222A1C;
+  --deep-ink: #151C10;
+  --field-bg: #FFFFFF;
+  --error: #B3261E;
+}
+
+/* 10. 藤と空 — light wisteria + sky, airy instead of the old dusk register; sumi structure. */
+[data-theme="yuukage-yamabuki"] {
+  --bg: #F5F6FA;
+  --surface: #FFFFFF;
+  --surface-alt: #E2E6F2;
+  --text: #262A32;
+  --dim: #5E6572;
+  --border: #C2CBE0;
+  --accent: #4F6396;
+  --accent-bright: #A8B8E8;
+  --deep: #23262E;
+  --deep-ink: #16181E;
+  --field-bg: #FFFFFF;
+  --error: #9C2F38;
+}
+
+/* 11. 珊瑚と真珠 — coral + pearl white, soft, warm and fresh; text accent deepened; sumi structure. */
+[data-theme="sango-shinju"] {
+  --bg: #FFF7F2;
+  --surface: #FFFFFF;
+  --surface-alt: #FDE8E0;
+  --text: #2E2622;
+  --dim: #6E5E58;
+  --border: #EED0C4;
+  --accent: #B44A32;
+  --accent-bright: #FF9A85;
+  --deep: #2B211E;
+  --deep-ink: #1D1512;
+  --field-bg: #FFFFFF;
+  --error: #A62B1E;
+}
+
+/* 12. 白磁と空 — porcelain white + clear sky, crisp and airy (the old iron-navy register lightened); sumi structure. */
+[data-theme="tetsukon-ginnezu"] {
+  --bg: #F4F8FA;
+  --surface: #FFFFFF;
+  --surface-alt: #E0EAF0;
+  --text: #21282C;
+  --dim: #5A686E;
+  --border: #BECFD8;
+  --accent: #2B6B7A;
+  --accent-bright: #7FB8C9;
+  --deep: #20262A;
+  --deep-ink: #141A1E;
+  --field-bg: #FFFFFF;
+  --error: #B3261E;
+}
+
+/* 13. 杏と若芽 — apricot + young-sprout green, fresh and light; text accent deepened; sumi structure. */
+[data-theme="anzu-wakame"] {
+  --bg: #FFFBF0;
+  --surface: #FFFFFF;
+  --surface-alt: #FDEED0;
+  --text: #2C2820;
+  --dim: #686050;
+  --border: #E8D9AE;
+  --accent: #A85E1A;
+  --accent-bright: #93B45E;
+  --deep: #26231C;
+  --deep-ink: #181610;
+  --field-bg: #FFFFFF;
+  --error: #A63A1E;
+}
+
+/* 14. 若芽と月白 — young sprout green on moon white (replaces the old dark-oak register); sumi structure. */
+[data-theme="kurotsurubami-ama"] {
+  --bg: #F6F9F0;
+  --surface: #FFFFFF;
+  --surface-alt: #E6EFD6;
+  --text: #252A20;
+  --dim: #5E6852;
+  --border: #C8D6B0;
+  --accent: #4A7A3A;
+  --accent-bright: #A8C686;
+  --deep: #23261E;
+  --deep-ink: #161A12;
+  --field-bg: #FFFFFF;
+  --error: #9C3A24;
+}
+
+/* 15. 藤と白磁 — light wisteria on porcelain white; sumi structure. */
+[data-theme="fuji-tsukikage"] {
+  --bg: #F7F5FB;
+  --surface: #FFFFFF;
+  --surface-alt: #E8E2F2;
+  --text: #282630;
+  --dim: #625E70;
+  --border: #CFC6E2;
+  --accent: #6B4FA1;
+  --accent-bright: #B8A6E0;
+  --deep: #25232C;
+  --deep-ink: #17151E;
+  --field-bg: #FFFFFF;
+  --error: #9C2F4A;
+}
+
+/* The LP keeps its printed ecru identity in both system modes: the palette
+   is the artwork's own paper, so dark mode only deepens the ink slightly
+   rather than inverting the page. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: light;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ヘッダー用のセーフエリア対応（旧 tailwindcss-safe-area の pt-safe 相当） */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+body {
+  font-family: var(--font-body, var(--font-gothic));
+  letter-spacing: var(--ls-body, 0.02em);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Headings follow the active theme's heading font. Tailwind font-weight /
+   tracking utilities on individual headings still win where they are set;
+   the family itself always switches with the theme. */
+h1, h2, h3, h4 {
+  font-family: var(--font-heading, var(--font-body, var(--font-gothic)));
+}
+
+
+/* Scroll reveal: elements start quiet and settle in once. */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .parallax-img {
+    transform: none !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Colour themes 16–20 (colours only — fonts are independent, below).
+   All themes redone fresh/healthy on 2026-11-20; sumi structure kept. */
+/* ------------------------------------------------------------------ */
+
+/* 16. 雪白と珊瑚 — snow-white ground + fresh coral (the old scarlet softened); sumi structure. */
+[data-theme="yukishiro-hi"] {
+  --bg: #FEFDFB;
+  --surface: #FFFFFF;
+  --surface-alt: #F2EEE6;
+  --text: #26221E;
+  --dim: #655E58;
+  --border: #DDD6CC;
+  --accent: #C04A32;
+  --accent-bright: #FF8A75;
+  --deep: #26241F;
+  --deep-ink: #171512;
+  --field-bg: #FFFFFF;
+  --error: #A61C1C;
+}
+
+/* 17. 浅葱と砂 — light river asagi + sand tint, fresh; sumi structure. */
+[data-theme="fukagawa-suna"] {
+  --bg: #F3F7F3;
+  --surface: #FFFFFF;
+  --surface-alt: #EDE6D0;
+  --text: #232B26;
+  --dim: #5C665E;
+  --border: #C4CDB2;
+  --accent: #1E6B5E;
+  --accent-bright: #63B3AC;
+  --deep: #202A24;
+  --deep-ink: #141E18;
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+}
+
+/* 18. 桃と月白 — soft peach on moon white (the old madder/iron register lightened); sumi structure. */
+[data-theme="akane-tetsu"] {
+  --bg: #FFF6F3;
+  --surface: #FFFFFF;
+  --surface-alt: #FBE4DE;
+  --text: #2B2422;
+  --dim: #6B5E5A;
+  --border: #EACFC8;
+  --accent: #A63A32;
+  --accent-bright: #F0836A;
+  --deep: #28211F;
+  --deep-ink: #1A1412;
+  --field-bg: #FFFFFF;
+  --error: #8E2E2E;
+}
+
+/* 19. 若苗と空 — young seedling green + sky blue, fresh and light; sumi structure. */
+[data-theme="wakanae-sora"] {
+  --bg: #F4FAF2;
+  --surface: #FFFFFF;
+  --surface-alt: #E0F0DC;
+  --text: #243028;
+  --dim: #5A6E5F;
+  --border: #BFD8B8;
+  --accent: #1E7A6B;
+  --accent-bright: #5BA8D9;
+  --deep: #202B22;
+  --deep-ink: #141E16;
+  --field-bg: #FFFFFF;
+  --error: #B3261E;
+}
+
+/* 20. 山吹と白磁 — bright yamabuki on porcelain white (the old gold-dust register freshened); sumi structure. */
+[data-theme="sumi-kindei"] {
+  --bg: #FDF9EC;
+  --surface: #FFFFFF;
+  --surface-alt: #F5EBC8;
+  --text: #262219;
+  --dim: #615A48;
+  --border: #DDD0A0;
+  --accent: #8A6410;
+  --accent-bright: #F2C230;
+  --deep: #26241F;
+  --deep-ink: #17150F;
+  --field-bg: #FFFFFF;
+  --error: #9C3A24;
+}
+
+/* ------------------------------------------------------------------ */
+/* Colour themes 21–30 — the 「墨と〜」 series, redone fresh on       */
+/* 2026-11-20: sumi ink anchors every theme (text + deep/structure,   */
+/* footer stays sumi); each partner colour is now a fresh accent —    */
+/* porcelain, sky, sprout, citrus, wisteria, coral, mint, young       */
+/* grass, peach, asagi. Body text vs background is 12.8–15.5:1.       */
+/* ------------------------------------------------------------------ */
+
+/* 21. 墨と白磁 — sumi + porcelain white: the most minimal member of the sumi series, with a fresh grey-green accent. */
+[data-theme="sumi-gin"] {
+  --bg: #F7F8F7;
+  --surface: #FFFFFF;
+  --surface-alt: #E6EAE8;
+  --text: #1F1F1D;
+  --dim: #5A605C;
+  --border: #C6CFCB;
+  --accent: #4A5A56;
+  --accent-bright: #9AB8B0;
+  --deep: #262624;
+  --deep-ink: #171716;
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+}
+
+/* 22. 墨と空 — sumi + clear sky blue. */
+[data-theme="sumi-gunjou"] {
+  --bg: #F2F7FA;
+  --surface: #FFFFFF;
+  --surface-alt: #DFEBF2;
+  --text: #20262A;
+  --dim: #5A666E;
+  --border: #BFD2DE;
+  --accent: #2C5F8A;
+  --accent-bright: #5BA8D9;
+  --deep: #22282E;
+  --deep-ink: #151A1E;
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+}
+
+/* 23. 墨と若芽 — sumi + young sprout green. */
+[data-theme="sumi-wakame"] {
+  --bg: #F4F8EC;
+  --surface: #FFFFFF;
+  --surface-alt: #E4EECD;
+  --text: #23261E;
+  --dim: #5D6350;
+  --border: #C2D2A0;
+  --accent: #56702C;
+  --accent-bright: #A8C686;
+  --deep: #232A1C;
+  --deep-ink: #161E10;
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+}
+
+/* 24. 墨と柑橘 — sumi + bright citrus amber, deepened for text. */
+[data-theme="sumi-yamabuki"] {
+  --bg: #FDF8E8;
+  --surface: #FFFFFF;
+  --surface-alt: #F7ECC8;
+  --text: #262219;
+  --dim: #615A48;
+  --border: #DDD0A0;
+  --accent: #8A6410;
+  --accent-bright: #F5B81E;
+  --deep: #26241C;
+  --deep-ink: #17150E;
+  --field-bg: #FFFFFF;
+  --error: #9C3A24;
+}
+
+/* 25. 墨と藤 — sumi + light wisteria. */
+[data-theme="sumi-fuji"] {
+  --bg: #F6F4FA;
+  --surface: #FFFFFF;
+  --surface-alt: #E6E0F2;
+  --text: #26232C;
+  --dim: #5F5A6A;
+  --border: #C8BEE0;
+  --accent: #62488F;
+  --accent-bright: #B8A6E0;
+  --deep: #252230;
+  --deep-ink: #17141E;
+  --field-bg: #FFFFFF;
+  --error: #9C2F4A;
+}
+
+/* 26. 墨と珊瑚 — sumi + fresh coral. */
+[data-theme="sumi-sango"] {
+  --bg: #FFF6F1;
+  --surface: #FFFFFF;
+  --surface-alt: #FDE6DB;
+  --text: #28231F;
+  --dim: #655C52;
+  --border: #EBCFC2;
+  --accent: #B0492F;
+  --accent-bright: #FF8A75;
+  --deep: #2A2320;
+  --deep-ink: #1C1714;
+  --field-bg: #FFFFFF;
+  --error: #A62B1E;
+}
+
+/* 27. 墨とミント — sumi + fresh mint green. */
+[data-theme="sumi-hakuji"] {
+  --bg: #F2F9F5;
+  --surface: #FFFFFF;
+  --surface-alt: #DFF0E6;
+  --text: #212A26;
+  --dim: #56665E;
+  --border: #B8D8C6;
+  --accent: #1E7A5E;
+  --accent-bright: #5EC9A0;
+  --deep: #202A24;
+  --deep-ink: #141E18;
+  --field-bg: #FFFFFF;
+  --error: #B3261E;
+}
+
+/* 28. 墨と若草 — sumi + young-grass green. */
+[data-theme="sumi-koke"] {
+  --bg: #F5F8EE;
+  --surface: #FFFFFF;
+  --surface-alt: #E6EECD;
+  --text: #23261F;
+  --dim: #5B6050;
+  --border: #C4D2A6;
+  --accent: #5A7A2F;
+  --accent-bright: #A8C686;
+  --deep: #232A1C;
+  --deep-ink: #161E10;
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+}
+
+/* 29. 墨と桃 — sumi + soft peach. */
+[data-theme="sumi-akane"] {
+  --bg: #FFF6F3;
+  --surface: #FFFFFF;
+  --surface-alt: #FBE6E0;
+  --text: #27211F;
+  --dim: #625854;
+  --border: #EACFC6;
+  --accent: #A63E32;
+  --accent-bright: #F59A85;
+  --deep: #28211F;
+  --deep-ink: #1A1412;
+  --field-bg: #FFFFFF;
+  --error: #8E2E2E;
+}
+
+/* 30. 墨と浅葱 — sumi + pale asagi blue-green, cool and fresh. */
+[data-theme="sumi-asagi"] {
+  --bg: #F0F7F7;
+  --surface: #FFFFFF;
+  --surface-alt: #D9ECEA;
+  --text: #21282A;
+  --dim: #566460;
+  --border: #B0D0CB;
+  --accent: #207A72;
+  --accent-bright: #63B3AC;
+  --deep: #1F2E2C;
+  --deep-ink: #131E1C;
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+}
+
+/* ------------------------------------------------------------------ */
+/* Font sets 1–20, switched independently via data-font on <html>.     */
+/* Only --font-heading / --font-body / --ls-body change here; colours  */
+/* come from the data-theme blocks above, so any combination works.   */
+/* ------------------------------------------------------------------ */
+
+[data-font="tansei-gothic"] {
+  --font-heading: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", sans-serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="shippori-mincho"] {
+  --font-heading: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.03em;
+}
+[data-font="zen-old-mincho"] {
+  --font-heading: "Zen Old Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.03em;
+}
+[data-font="serif-classic"] {
+  --font-heading: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="maru-gothic"] {
+  --font-heading: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-body: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="zen-kaku"] {
+  --font-heading: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="sawarabi-gothic"] {
+  --font-heading: "Sawarabi Gothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-body: "Sawarabi Gothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --ls-body: 0.03em;
+}
+[data-font="shippori-b1"] {
+  --font-heading: "Shippori Mincho B1", "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-body: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --ls-body: 0.03em;
+}
+[data-font="kosugi-gothic"] {
+  --font-heading: "Kosugi", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="kaisei-decol"] {
+  --font-heading: "Kaisei Decol", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="kiwi-maru"] {
+  --font-heading: "Kiwi Maru", "Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", sans-serif;
+  --font-body: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="zen-kaku-bold"] {
+  --font-heading: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --ls-body: 0.01em;
+}
+/* Font set 12 asks for tight, bold headings. */
+[data-font="zen-kaku-bold"] h1,
+[data-font="zen-kaku-bold"] h2,
+[data-font="zen-kaku-bold"] h3 {
+  font-weight: 700;
+}
+[data-font="zen-maru"] {
+  --font-heading: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="sawarabi-mincho"] {
+  --font-heading: "Sawarabi Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --font-body: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --ls-body: 0.03em;
+}
+[data-font="shippori-light"] {
+  --font-heading: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="fude-moji"] {
+  --font-heading: "Yuji Syuku", "Kaisei Decol", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="kaisei-opti"] {
+  --font-heading: "Kaisei Opti", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="hina-mincho"] {
+  --font-heading: "Hina Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --font-body: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --ls-body: 0.03em;
+}
+[data-font="murecho"] {
+  --font-heading: "Murecho", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-body: "Murecho", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --ls-body: 0.02em;
+}
+[data-font="shippori-antique"] {
+  --font-heading: "Shippori Antique", "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-body: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --ls-body: 0.03em;
+}
+
+/* Phone tap targets: at least 32px tall. */
+@layer base {
+  button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) {
+    min-height: 2rem;
+  }
+}

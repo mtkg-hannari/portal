@@ -1,0 +1,37 @@
+---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+// 枠の中で、スクロールに合わせて少しずれる画像。ビルド時に最適なサイズへ変換される。
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  class?: string;
+  strength?: number;
+  /** ファーストビューの画像は true（遅延読み込みしない） */
+  eager?: boolean;
+  sizes?: string;
+}
+const {
+  src,
+  alt,
+  class: className = "",
+  strength = 22,
+  eager = false,
+  sizes = "(min-width: 1152px) 1152px, 100vw",
+} = Astro.props;
+---
+
+<div class={`overflow-hidden ${className}`} data-parallax={strength}>
+  <Image
+    src={src}
+    alt={alt}
+    widths={[640, 960, 1280, 1600]}
+    sizes={sizes}
+    format="webp"
+    quality={80}
+    loading={eager ? "eager" : "lazy"}
+    fetchpriority={eager ? "high" : "auto"}
+    class="parallax-img h-full w-full object-cover will-change-transform"
+  />
+</div>

@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+@theme {
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 28px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 30px;
+  --text-3xl--line-height: 36px;
+  --text-4xl: 36px;
+  --text-4xl--line-height: 40px;
+  --text-5xl: 48px;
+  --text-5xl--line-height: 52px;
+}
+
+/* ------------------------------------------------------------------ */
+/* 確定デザイン: カラー「浅葱と砂」× フォント「丸ゴシック」            */
+/* （旧 Vite 版のテーマ切替は廃止。値は archive/ に残してあります）    */
+/* ------------------------------------------------------------------ */
+:root {
+  color-scheme: light;
+  --bg: #F3F7F3;
+  --surface: #FFFFFF;
+  --surface-alt: #EDE6D0;
+  --text: #232B26;
+  --dim: #5C665E;
+  --border: #C4CDB2;
+  --accent: #1E6B5E;        /* 浅葱（文字色として十分なコントラストに濃くしてある） */
+  --accent-bright: #63B3AC;
+  --deep: #202A24;          /* 墨 — フッターなど濃色の構造部 */
+  --field-bg: #FFFFFF;
+  --error: #A63A2A;
+  --font-heading: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-body: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --ls-body: 0.02em;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* 固定ヘッダーの高さぶん、アンカー移動の位置をずらす */
+  scroll-padding-top: 5rem;
+}
+
+/* ヘッダー用のセーフエリア対応 */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+body {
+  font-family: var(--font-body);
+  letter-spacing: var(--ls-body);
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+}
+
+/* スマホで押しやすい高さ（32px 以上） */
+@layer base {
+  button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) {
+    min-height: 2rem;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* スクロール演出（JS が無効なら演出なしで全て表示される）            */
+/* ------------------------------------------------------------------ */
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+html.js .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  html.js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .parallax-img {
+    transform: none !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Journal 記事本文（Markdown）                                        */
+/* ------------------------------------------------------------------ */
+.article-body {
+  line-height: 2;
+  color: var(--text);
+}
+.article-body > * + * {
+  margin-top: 1.5rem;
+}
+.article-body h2 {
+  margin-top: 3rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--deep);
+}
+.article-body h3 {
+  margin-top: 2.25rem;
+  font-size: 1.2rem;
+  line-height: 1.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--deep);
+}
+.article-body ul,
+.article-body ol {
+  padding-left: 1.5rem;
+}
+.article-body ul { list-style: disc; }
+.article-body ol { list-style: decimal; }
+.article-body li + li { margin-top: 0.5rem; }
+.article-body a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.article-body blockquote {
+  border-left: 2px solid var(--accent-bright);
+  padding-left: 1.25rem;
+  color: var(--dim);
+}
+.article-body code {
+  background: var(--surface-alt);
+  padding: 0.1em 0.4em;
+  font-size: 0.9em;
+}
+.article-body pre {
+  overflow-x: auto;
+  background: var(--deep);
+  color: #fff;
+  padding: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+.article-body pre code {
+  background: none;
+  padding: 0;
+}
+.article-body img {
+  max-width: 100%;
+  height: auto;
+}
