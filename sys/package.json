@@ -9,7 +9,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "og": "node scripts/make-og.mjs"
+    "og": "node scripts/make-og.mjs",
+    "rooms": "node scripts/stylize-rooms.mjs"
   },
   "engines": {
     "node": ">=22.12.0"

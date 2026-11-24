@@ -1,7 +1,6 @@
 ---
 import Reveal from "./Reveal.astro";
-import ParallaxImage from "./ParallaxImage.astro";
-import heroImg from "../assets/images/mco7-1.webp";
+import HeroCutaway from "./HeroCutaway.astro";
 ---
 
 <section id="top" class="mx-auto max-w-6xl px-5 pt-12 sm:px-8 sm:pt-20">
@@ -37,12 +36,6 @@ import heroImg from "../assets/images/mco7-1.webp";
   </Reveal>
 
   <Reveal class="mt-12 sm:mt-16" delayMs={150}>
-    <ParallaxImage
-      src={heroImg}
-      alt="建物の外観を描いたイラスト"
-      class="aspect-[4/5] w-full sm:aspect-[16/10]"
-      strength={26}
-      eager
-    />
+    <HeroCutaway class="aspect-[4/5] w-full sm:aspect-[16/10]" strength={26} />
   </Reveal>
 </section>

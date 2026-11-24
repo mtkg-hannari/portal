@@ -1,0 +1,89 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Reveal from "../components/Reveal.astro";
+import CoconalaCard from "../components/CoconalaCard.astro";
+import Credentials from "../components/Credentials.astro";
+import { PROFILE } from "../profile";
+
+const base = import.meta.env.BASE_URL;
+const { name, reading, role, experienceYears, credentials } = PROFILE;
+
+// 個人の構造化データ（代表者の実名と資格）
+const personLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name,
+  jobTitle: role,
+  worksFor: { "@type": "Organization", name: "はんなりdev" },
+  url: Astro.site ? new URL("profile/", Astro.site).toString() : undefined,
+  hasCredential: credentials.map((c) => ({
+    "@type": "EducationalOccupationalCredential",
+    name: c.name,
+    credentialCategory: "professional certification",
+    recognizedBy: { "@type": "Organization", name: "情報処理推進機構（IPA）" },
+  })),
+};
+---
+
+<Layout
+  title="代表者について | はんなりdev"
+  description="はんなりdevの代表者の経歴と、IPA 情報処理技術者試験（高度区分）の合格資格、ココナラでの実績についてご紹介します。"
+>
+  <article class="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
+    <p class="text-xs font-medium uppercase tracking-[0.35em] text-[var(--dim)]">Profile</p>
+    <h1 class="mt-4 text-3xl font-medium tracking-[0.12em] text-[var(--deep)] sm:text-4xl">代表者について</h1>
+    <p class="mt-4 text-lg tracking-[0.12em] text-[var(--deep)]">
+      {role} <span class="font-medium">{name}</span>
+      <span class="ml-1 text-sm text-[var(--dim)]">（{reading}）</span>
+    </p>
+    <div class="mt-6 h-px w-full bg-[var(--border)]"></div>
+    <script type="application/ld+json" set:html={JSON.stringify(personLd)}></script>
+
+    <Credentials class="mt-12 px-0 sm:px-0" />
+
+    <div class="mt-16 grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
+      <Reveal>
+        <h2 class="text-xl font-medium leading-snug tracking-[0.08em] text-[var(--deep)]">
+          設計から運用まで、一人の設計者として。
+        </h2>
+        <div class="mt-6 space-y-5 text-base leading-loose text-[var(--text)]">
+          {
+            experienceYears !== null && (
+              <p>IT 業界で {experienceYears} 年以上、システムの設計・開発・運用に携わってきました。</p>
+            )
+          }
+          <p>小さな会社だからこそ、相談の段階から公開後の保守まで、同じ目で見続けます。</p>
+        </div>
+
+        <div class="mt-10">
+          <CoconalaCard />
+        </div>
+      </Reveal>
+
+      <Reveal delayMs={120}>
+        <h2 class="text-sm font-medium tracking-[0.14em] text-[var(--deep)]">
+          合格している資格（IPA 情報処理技術者試験・高度区分）
+        </h2>
+        <ul class="mt-5 space-y-5">
+          {
+            credentials.map((c) => (
+              <li class="border-b border-[var(--border)] pb-5">
+                <p class="font-medium text-[var(--deep)]">
+                  {c.name}
+                  {c.passed && <span class="ml-2 text-sm font-normal text-[var(--dim)]">（{c.passed} 合格）</span>}
+                </p>
+                <p class="mt-1 text-sm leading-relaxed text-[var(--text)]">{c.summary}</p>
+              </li>
+            ))
+          }
+        </ul>
+      </Reveal>
+    </div>
+
+    <p class="mt-16">
+      <a href={`${base}#top`} class="text-sm tracking-[0.14em] text-[var(--accent)] underline underline-offset-4"
+        >トップページへ戻る</a
+      >
+    </p>
+  </article>
+</Layout>

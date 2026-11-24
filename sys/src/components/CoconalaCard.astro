@@ -1,0 +1,174 @@
+---
+// ココナラの実績を、幕が開くように現すセクション。
+// 画像は砂色の幕に隠れていて、画面に入る（スクロール）か、クリック・タップで左から幕が開く。
+// ココナラの画面は転載せず、数字（src/profile.ts）と一文、デスクの画像だけを使う。
+// url が null の間は何も表示しない。JS が無効なときは最初から全部見える。
+import { Image } from "astro:assets";
+import deskImg from "../assets/images/desk-golden.png";
+import { PROFILE } from "../profile";
+
+const { url, rating, sales, proCertified, asOf } = PROFILE.coconala;
+const show = url !== null;
+---
+
+{
+  show && (
+    <div class="coco" data-coco>
+      <div class="coco-stage relative overflow-hidden">
+        <Image
+          src={deskImg}
+          alt="デスクの上にパソコンや小物が並んだイラスト"
+          widths={[600, 900, 1200]}
+          sizes="(min-width: 1024px) 560px, 100vw"
+          format="webp"
+          quality={80}
+          class="coco-img block aspect-[16/9] w-full object-cover"
+        />
+        <button
+          type="button"
+          class="coco-curtain absolute inset-0 flex items-center justify-center bg-[var(--surface-alt)] text-sm font-medium tracking-[0.2em] text-[var(--deep)]"
+          data-curtain
+        >
+          <span class="coco-curtain-label">ココナラ PRO 認定者の実績を開く</span>
+        </button>
+      </div>
+
+      <div class="coco-body mt-7">
+        <p class="text-xs font-medium uppercase tracking-[0.35em] text-[var(--accent)]">Coconala</p>
+        <p class="mt-3 text-xl font-medium leading-snug tracking-[0.06em] text-[var(--deep)]">
+          ココナラ <span class="coco-pro">PRO</span> 認定者が、
+          <br />
+          システム構築させていただきます。
+        </p>
+        <p class="mt-3 text-sm leading-relaxed text-[var(--text)]">
+          要望をお聞かせください。設計・開発・運用まで、一人の設計者として対応します。
+        </p>
+
+        <dl class="mt-6 grid grid-cols-3 gap-4 border-y border-[var(--border)] py-5 text-center">
+          <div>
+            <dt class="text-xs tracking-[0.1em] text-[var(--dim)]">評価</dt>
+            <dd class="mt-1 text-2xl font-medium text-[var(--deep)]">
+              <span class="text-[var(--accent)]" aria-hidden="true">★</span>
+              {rating?.toFixed(1)}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs tracking-[0.1em] text-[var(--dim)]">販売実績</dt>
+            <dd class="mt-1 text-2xl font-medium text-[var(--deep)]">
+              {sales}<span class="ml-0.5 text-sm">件</span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs tracking-[0.1em] text-[var(--dim)]">認定</dt>
+            <dd class="mt-1 text-base font-medium text-[var(--deep)]">{proCertified ? "プロ認定" : "—"}</dd>
+          </div>
+        </dl>
+
+        {asOf && <p class="mt-3 text-xs text-[var(--dim)]">{asOf}</p>}
+
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-6 inline-block border border-[var(--deep)] px-6 py-2.5 text-sm font-medium tracking-[0.14em] text-[var(--deep)] transition-colors hover:bg-[var(--deep)] hover:text-white"
+        >
+          ココナラのプロフィールを見る
+        </a>
+      </div>
+    </div>
+  )
+}
+
+<style>
+  /* PRO の文字に、浅葱の下線 */
+  .coco-pro {
+    font-style: italic;
+    font-weight: 700;
+    background: linear-gradient(transparent 62%, rgb(99 179 172 / 0.6) 62%);
+  }
+
+  /* 画像：幕の下でゆっくり寄る（開いたら元の大きさへ） */
+  .coco-img {
+    transform: scale(1.06);
+    transition: transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* 幕：JS が動いているときだけ隠す。左から右へ、右へ抜けるように開く */
+  :global(.js) .coco-curtain {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 1.2s cubic-bezier(0.65, 0, 0.35, 1);
+    cursor: pointer;
+  }
+  :global(.js) .coco-curtain:focus-visible {
+    outline: 2px solid var(--deep);
+    outline-offset: -6px;
+  }
+  :global(.js) .coco-curtain-label {
+    transition: opacity 0.4s ease;
+  }
+  :global(.js) .coco-stage.is-open .coco-curtain {
+    clip-path: inset(0 0 0 100%);
+    pointer-events: none;
+  }
+  :global(.js) .coco-stage.is-open .coco-curtain-label {
+    opacity: 0;
+  }
+  :global(.js) .coco-stage.is-open .coco-img {
+    transform: scale(1);
+  }
+
+  /* 文字：幕が開いたあとに、下から静かに現れる */
+  :global(.js) .coco-body {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.8s ease 0.6s,
+      transform 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.6s;
+  }
+  :global(.js) .coco-stage.is-open ~ .coco-body {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .coco-img,
+    :global(.js) .coco-curtain,
+    :global(.js) .coco-curtain-label,
+    :global(.js) .coco-body {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // 幕を開く：画面に入ったとき（スクロール）と、クリック・タップ・キー操作のとき
+  const roots = document.querySelectorAll<HTMLElement>("[data-coco]");
+
+  roots.forEach((root) => {
+    const stage = root.querySelector<HTMLElement>(".coco-stage");
+    const curtain = root.querySelector<HTMLButtonElement>("[data-curtain]");
+    if (!stage || !curtain) return;
+
+    const open = () => {
+      if (stage.classList.contains("is-open")) return;
+      stage.classList.add("is-open");
+      // 開いたら幕のボタンは使えなくする（キーボードでも触れないように）
+      curtain.disabled = true;
+    };
+
+    curtain.addEventListener("click", open);
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            open();
+            io.disconnect();
+          }
+        }
+      },
+      { threshold: 0.35 },
+    );
+    io.observe(stage);
+  });
+</script>

@@ -1,0 +1,974 @@
+---
+// トップの建物イラストに「切り込み」を入れて、中のフロアを見せる。
+// 目印（点）にマウスを乗せる・キーボードでフォーカスする・タップすると、その階の外壁パネルが取り外されたように消え、
+// 穴の奥に部屋のイラストが見える。
+//
+// 穴の縁は、トップ画像（mco7-1.webp, 1920x1200）の格子線と床の帯（青い帯）に合わせてある。
+// 形は「行」の積み重ねで、行ごとに [上端y, 下端y, 左端x, 右端x]（画像の px）を指定する。
+//   縦の線（格子線の中心 x）: 239, 262, 286, 309, 330, 353, 376, 399, 422, 446, 468, 491, 514, 537, 561, 584, 607,
+//     632, 658, 681, 704, 727, 751, 774, 797, 821, 844, 867, 890, 913, 936, 959, 982, 1005, 1028, 1051, 1081, 1105,
+//     1128, 1151, 1174, 1197, 1221, 1244, 1267, 1290, 1313, 1337, 1365, 1389, 1412, 1435, 1458, 1481
+//   屋根の線の下端: 162 ／ 青い帯（上端〜下端）: 192-203, 241-252, 317-327, 369-380, 434-445, 522-537, 582-596,
+//     640-654, 698-712, 757-772, 815-829, 873-887 ／ 細い横線: 223, 277, 293, 350, 414, 473, 502, 560, 619, 678,
+//     735, 795, 854 ／ 黒い基壇: 919-1063（入口の看板は x 879-1012）
+// スマホでは画像の中央部分（x 25〜75%）だけが見えるので、穴はその範囲に置く。
+import { Image, getImage } from "astro:assets";
+import heroImg from "../assets/images/mco7-1.webp";
+import rooftopImg from "../assets/images/rooftop-a-flat.webp";
+// 食堂とロビーは、建物のイラストと同じ画風で描き直した画像を使う
+import diningImg from "../assets/images/lp-dining-matched.webp";
+import lobbyImg from "../assets/images/lp-lobby-matched.webp";
+
+interface Props {
+  class?: string;
+  strength?: number;
+}
+const { class: className = "", strength = 26 } = Astro.props;
+
+const IMG_W = 1920;
+const IMG_H = 1200;
+
+type Row = [y0: number, y1: number, x0: number, x1: number];
+// 穴の形: polygon（段々の外壁に沿う）/ ellipse（楕円）/ blend（段々と楕円の中間）
+type Shape = "polygon" | "ellipse" | "blend";
+// 奥行きの箱（blend の穴だけで使える）
+//   vp: 消失点（穴の外枠に対する割合 [x, y]）。左上に寄せると、下と右の面が広く見える
+//   k: 奥の輪郭の大きさ（手前に対する倍率）。小さいほど奥が深い
+//   dark / mid / light: 影になる面 / 横を向く面 / 光が当たる面の色
+type Box = { vp: Pt; k: number; dark: string; mid: string; light: string };
+
+const SPOTS_SRC = [
+  {
+    id: "rooftop",
+    depth: 0.2, // 奥行きの強さ（1 が基準）
+    smooth: 0, // 輪郭のなめらかさ（0 は角丸のみ。増やすほど丸く、外壁の四角から離れる）
+    shape: "polygon" as Shape, // 穴の形（polygon: 段々の輪郭 / ellipse: 楕円 / blend: 中間）
+    blend: 0, // blend のときの楕円への寄せ具合（0〜1）
+    shadowBlur: 8, // 壁の影のぼかし量（0 でくっきり。depth を掛けて使う）
+    shadowOffset: [2.4, 3.2] as Pt, // 壁の影のずれ（画像 px。右・下へ）
+    shadowOpacity: 0.12, // 壁の影の濃さ
+    rim: true, // 穴の縁のぼかした線を描くか
+    feather: 4, // 穴の縁のぼかし（0 でくっきりした切り口）
+    faceDepth: 0, // 切り口に見える壁の断面（厚み）の幅（画像 px。0 で描かない）
+    faceColor: "#e4dcc6", // 壁の断面の色
+    rough: 0, // 切り口の細かな凹凸（画像 px。0 でなめらか）
+    round: 1, // blend の輪郭の角を丸める回数（多いほど角が丸い）
+    box: null as Box | null, // 奥行きの箱（null で使わない）
+    winCol: 6, // 目印の窓を左右にずらすマス数（負の値で左へ。穴の中心のマスが 0）。6 マス右へ
+    jitter: 0, // 頂点のランダムなずれ量（画像 px。0 で左右対称のまま）
+    seed: 1, // ランダムの種（同じ値なら毎回同じ形）
+    dy: 0, // 穴の位置（画像 px。正の値で下へ）
+    shadowColor: "#bbcfc3", // 壁の影の色
+    rimColor: "#9ca19e", // 穴の縁の線の色
+    label: "屋上庭園",
+    img: rooftopImg,
+    alt: "屋上庭園のイラスト。植栽に囲まれたテラスで、人がテーブルを囲んでいる",
+    zone: { x0: 11, x1: 90, y0: 6, y1: 34 }, // マウスを乗せると開く範囲（画像に対する %）
+    rows: [
+      [162, 192, 959, 1221],
+      [192, 241, 913, 1267],
+      [241, 317, 890, 1290],
+      [317, 369, 913, 1244],
+    ] as Row[],
+  },
+  {
+    id: "dining",
+    depth: 0.9,
+    smooth: 0,
+    shape: "blend" as Shape, // 段々と楕円の中間（rows の外枠を基準にする）
+    blend: 0.1, // 楕円へ寄せる割合（0 が段々、1 が楕円）。低いほど外壁に沿う
+    jitter: 22, // 頂点のランダムなずれ量（画像 px）。左右非対称にする
+    seed: 7, // ランダムの種（値を変えると形が変わる）
+    shadowBlur: 0, // ぼかしなし。くっきりした奥行きの影にする
+    shadowOffset: [6, 8] as Pt, // 奥の部屋に落ちる影のずれ（奥の輪郭の左上から）
+    shadowOpacity: 0.6, // 奥の部屋に落ちる影の濃さ
+    rim: false, // 内側のぼかした縁の線は描かない
+    // 切り絵のような外壁に合わせる：くっきりした切り口と、奥行きのある壁の内側の面
+    feather: 0,
+    faceDepth: 0, // 奥行きの箱（box）で壁の内側を描くので、平らな断面は使わない
+    faceColor: "#e4dcc6",
+    rough: 1.2,
+    round: 1,
+    box: {
+      vp: [0.38, 0.3], // 消失点：やや左上（下と右の面が広く、上と左の面が狭く見える）
+      k: 0.98, // 奥の輪郭は手前の 98%（内側の面を細めに）
+      dark: "#45423a", // 上・左の面（影になる）
+      mid: "#b3ab95", // 光に対して横を向く面
+      light: "#ebe4cf", // 下・右の面（光が当たる。外壁の紙の色に近い）
+    } as Box | null,
+    winCol: -3, // 目印の窓を 3 マス左へ
+    dy: 40, // 位置を下げる（画像 px）
+    // 影はトップ画像の建物の影（#222223）と同じ色にする
+    shadowColor: "#222223", // 壁の影の色
+    rimColor: "#b8d9cb", // 穴の縁の線の色（外壁の色）
+    label: "8階 食堂",
+    img: diningImg,
+    alt: "8階の食堂のイラスト。窓際のテーブルで、人が食事を楽しんでいる",
+    zone: { x0: 11, x1: 90, y0: 37.5, y1: 69 },
+    rows: [
+      [445, 473, 607, 844],
+      [473, 522, 561, 890],
+      [522, 582, 537, 913],
+      [582, 640, 514, 936],
+      [640, 698, 537, 913],
+      [698, 735, 584, 867],
+    ] as Row[],
+  },
+  {
+    id: "lobby",
+    depth: 0.9,
+    // 8階 食堂と同じ効果（くっきりした切り口、黒い硬い影、奥行きの箱）。
+    // 形は以前の「外壁の段々に沿って角を丸めた形」に近づける（楕円に寄せず、ずらさず、角を 3 回丸める）
+    smooth: 0,
+    shape: "blend" as Shape,
+    blend: 0,
+    jitter: 0,
+    seed: 7,
+    shadowBlur: 0,
+    shadowOffset: [6, 8] as Pt,
+    shadowOpacity: 0.6,
+    rim: false,
+    feather: 0,
+    faceDepth: 0,
+    faceColor: "#e4dcc6",
+    rough: 1.2,
+    round: 3,
+    box: {
+      vp: [0.38, 0.3],
+      k: 0.98,
+      dark: "#45423a",
+      mid: "#b3ab95",
+      light: "#ebe4cf",
+    } as Box | null,
+    winCol: -4, // 目印の窓を 4 マス左へ
+    dy: 0,
+    shadowColor: "#222223", // 壁の影の色（トップ画像の建物の影と同じ）
+    rimColor: "#9ca19e", // 穴の縁の線の色（rim: false のため未使用）
+    label: "1階 ロビー",
+    img: lobbyImg,
+    alt: "1階のロビーのイラスト。黒い柱が並ぶ広い空間と、装飾のあるエレベーター",
+    zone: { x0: 11, x1: 90, y0: 69, y1: 90 },
+    rows: [
+      [829, 873, 1105, 1290],
+      [873, 919, 1051, 1337],
+      [919, 1050, 1028, 1313],
+    ] as Row[],
+  },
+];
+
+const pct = (v: number, total: number) => Number(((v / total) * 100).toFixed(3));
+
+// 目印にする「明かりの灯った窓」：外壁の格子（上のコメントの座標）から、指定した点を含む窓のマスを求める
+const GRID_X = [
+  239, 262, 286, 309, 330, 353, 376, 399, 422, 446, 468, 491, 514, 537, 561, 584, 607, 632, 658, 681, 704, 727, 751,
+  774, 797, 821, 844, 867, 890, 913, 936, 959, 982, 1005, 1028, 1051, 1081, 1105, 1128, 1151, 1174, 1197, 1221, 1244,
+  1267, 1290, 1313, 1337, 1365, 1389, 1412, 1435, 1458, 1481,
+];
+const GRID_Y_LINES = [162, 223, 277, 293, 350, 414, 473, 502, 560, 619, 678, 735, 795, 854];
+const BANDS: Pt[] = [
+  [192, 203], [241, 252], [317, 327], [369, 380], [434, 445], [522, 537],
+  [582, 596], [640, 654], [698, 712], [757, 772], [815, 829], [873, 887],
+];
+const BASE_TOP = 919; // 黒い基壇の上端（これより下に格子はない）
+const WIN_INSET = 1.5; // 格子の線を隠さないよう、マスの内側へ縮める量（画像 px）
+// 明かりは必ず窓のマスの中に収める。黒い基壇（窓がない）や青い帯の上には置かない
+const WIN_COUNT = 3; // 明かりを灯す窓の数（横に並んだマス）
+const windowsAt = (x: number, y: number, col = 0) => {
+  // 縦：x を含む格子のマス（端なら一番近いマス）を中央にして、左右に並んだ WIN_COUNT マス
+  const cx = Math.min(Math.max(x, GRID_X[0]), GRID_X[GRID_X.length - 1] - 1);
+  const found = GRID_X.findIndex((v, j) => cx >= v && cx < GRID_X[j + 1]);
+  // col マスだけ左右にずらす（格子の端を越えないように）
+  const half = Math.floor(WIN_COUNT / 2);
+  const mid = Math.min(Math.max(found + col, half), GRID_X.length - 2 - (WIN_COUNT - 1 - half));
+  const cells = Array.from({ length: WIN_COUNT }, (_, k) => {
+    const i = mid - half + k;
+    return { x0: GRID_X[i] + WIN_INSET, x1: GRID_X[i + 1] - WIN_INSET };
+  });
+  // 横：基壇より下なら、基壇のすぐ上の窓の段にする
+  const ys = [...GRID_Y_LINES, ...BANDS.flat(), BASE_TOP].sort((a, b) => a - b);
+  const cy = Math.min(Math.max(y, ys[0]), BASE_TOP - 1);
+  let yi = ys.findIndex((v, j) => cy >= v && cy < ys[j + 1]);
+  // 青い帯の上に当たったときは、帯のすぐ下の段にする
+  if (BANDS.some(([a, b]) => a === ys[yi] && b === ys[yi + 1])) yi++;
+  const [y0, y1] = [ys[yi], ys[yi + 1]];
+  return { cells, y0: y0 + WIN_INSET, y1: y1 - WIN_INSET };
+};
+
+// 段々の輪郭の角を、半径 R の丸みに置き換えたパスを作る（R は画像 px）
+type Pt = [number, number];
+const CORNER_R = 80;
+const dist = (a: Pt, b: Pt) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+const towards = (from: Pt, to: Pt, r: number): Pt => {
+  const l = dist(from, to);
+  if (l === 0) return from;
+  const t = r / l;
+  return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+};
+const roundedPath = (poly: Pt[], R: number): string => {
+  // 同じ位置が続く頂点は取り除く
+  const pts = poly.filter((p, i) => i === 0 || dist(poly[i - 1], p) > 0);
+  const n = pts.length;
+  let d = "";
+  for (let i = 0; i < n; i++) {
+    const prev = pts[(i - 1 + n) % n];
+    const cur = pts[i];
+    const next = pts[(i + 1) % n];
+    // 辺が短い場合は、両側の辺の半分までしか丸めない（辺どうしが重ならないように）
+    const r = Math.min(R, dist(prev, cur) / 2, dist(cur, next) / 2);
+    const a = towards(cur, prev, r);
+    const b = towards(cur, next, r);
+    const f = (p: Pt) => `${Number(p[0].toFixed(1))} ${Number(p[1].toFixed(1))}`;
+    d += `${i === 0 ? "M" : "L"}${f(a)}Q${f(cur)} ${f(b)}`;
+  }
+  return `${d}Z`;
+};
+
+// Chaikin 法：各辺を 1/4 ずつ切り落として角をなめらかにする（回数が多いほど丸い）
+const chaikin = (pts: Pt[], iters: number): Pt[] => {
+  let p = pts;
+  for (let k = 0; k < iters; k++) {
+    const out: Pt[] = [];
+    for (let i = 0; i < p.length; i++) {
+      const a = p[i];
+      const b = p[(i + 1) % p.length];
+      out.push(
+        [0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]],
+        [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]],
+      );
+    }
+    p = out;
+  }
+  return p;
+};
+
+const SPOTS = await Promise.all(
+  SPOTS_SRC.map(async (s) => {
+    // 位置を下げる（dy）。以降の計算はこの rows を使う
+    const rows = s.rows.map((r) => [r[0] + s.dy, r[1] + s.dy, r[2], r[3]] as Row);
+    // 穴を囲む四角（画像の px）
+    const left = Math.min(...rows.map((r) => r[2]));
+    const right = Math.max(...rows.map((r) => r[3]));
+    const top = rows[0][0];
+    const bottom = rows[rows.length - 1][1];
+    const w = right - left;
+    const h = bottom - top;
+
+    // 行を積み重ねた段々の輪郭（四角の左上を原点にする）を、角を丸めたパスにする
+    const poly: Pt[] = [];
+    for (const [y0, y1, , x1] of rows) poly.push([x1 - left, y0 - top], [x1 - left, y1 - top]);
+    for (const [y0, y1, x0] of [...rows].reverse()) poly.push([x0 - left, y1 - top], [x0 - left, y0 - top]);
+    // 楕円：rows の外枠（w × h）に内接する楕円
+    const ellipsePath = `M0 ${h / 2}A${w / 2} ${h / 2} 0 1 0 ${w} ${h / 2}A${w / 2} ${h / 2} 0 1 0 0 ${h / 2}Z`;
+    // 決まった種の乱数で、頂点を少しずつずらす（同じ種なら毎回同じ形）
+    const jitterPts = (pts: Pt[], amp: number, seed: number): Pt[] => {
+      let v = seed;
+      const rand = () => {
+        v = (v * 1664525 + 1013904223) % 4294967296;
+        return v / 4294967296;
+      };
+      return pts.map(([x, y]) => [x + (rand() * 2 - 1) * amp, y + (rand() * 2 - 1) * amp]);
+    };
+    // 段々の頂点を、楕円上の同じ角度の点へ blend の割合で寄せる（段々と楕円の中間）
+    const blendToEllipse = (pts: Pt[], t: number): Pt[] =>
+      pts.map(([x, y]) => {
+        const ang = Math.atan2((y - h / 2) / (h / 2), (x - w / 2) / (w / 2));
+        const ex = w / 2 + (w / 2) * Math.cos(ang);
+        const ey = h / 2 + (h / 2) * Math.sin(ang);
+        return [(1 - t) * x + t * ex, (1 - t) * y + t * ey];
+      });
+    // 輪郭を細かく（約 step px ごとに）区切り、各点をわずかにずらして、手で切ったような凹凸をつける
+    const roughen = (pts: Pt[], step: number, amp: number, seed: number): Pt[] => {
+      if (amp <= 0) return pts;
+      let v = seed * 7919 + 13;
+      const rand = () => {
+        v = (v * 1664525 + 1013904223) % 4294967296;
+        return v / 4294967296;
+      };
+      const out: Pt[] = [];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        const b = pts[(i + 1) % pts.length];
+        const n = Math.max(1, Math.round(dist(a, b) / step));
+        for (let k = 0; k < n; k++) {
+          const t = k / n;
+          out.push([
+            a[0] + (b[0] - a[0]) * t + (rand() * 2 - 1) * amp,
+            a[1] + (b[1] - a[1]) * t + (rand() * 2 - 1) * amp,
+          ]);
+        }
+      }
+      return out;
+    };
+    const fmt = (pts: Pt[]) =>
+      `M${pts.map((p) => `${Number(p[0].toFixed(1))} ${Number(p[1].toFixed(1))}`).join("L")}Z`;
+    // blend の輪郭の点（凹凸つき）。奥行きの箱を作るときにも使う
+    const blendPts =
+      s.shape === "blend"
+        ? roughen(chaikin(blendToEllipse(jitterPts(poly, s.jitter, s.seed), s.blend), s.round), 5, s.rough, s.seed)
+        : null;
+    const holePath =
+      s.shape === "ellipse"
+        ? ellipsePath
+        : blendPts
+          ? fmt(blendPts)
+          : s.smooth > 0
+            ? fmt(chaikin(poly, s.smooth))
+            : roundedPath(poly, CORNER_R);
+    // 奥に落ちる影の形。切り口の凹凸や段差をそのまま写すと影がいびつになるため、
+    // blend のときは凹凸なしで、よりなめらかな輪郭から作る
+    const shadowPath =
+      s.shape === "blend"
+        ? fmt(chaikin(blendToEllipse(jitterPts(poly, s.jitter, s.seed), s.blend), Math.max(3, s.round)))
+        : holePath;
+
+    // 奥行きの箱：手前の輪郭を消失点へ k 倍に縮めた「奥の輪郭」を作り、その間を壁の内側の面として塗る。
+    // 部屋の絵も同じだけ縮めて奥に置く。
+    let innerPath = "";
+    let boxTransform = "";
+    const faces: { d: string; fill: string }[] = [];
+    if (s.box && blendPts) {
+      const { k } = s.box;
+      const vx = s.box.vp[0] * w;
+      const vy = s.box.vp[1] * h;
+      const outer = blendPts;
+      const n = outer.length;
+      // 手前の輪郭（凹凸つき）をならした輪郭（前後 r 点の平均）
+      const smoothen = (r: number) =>
+        outer.map((_, i) => {
+          let x = 0;
+          let y = 0;
+          for (let d = -r; d <= r; d++) {
+            const p = outer[(i + d + n) % n];
+            x += p[0];
+            y += p[1];
+          }
+          return [x / (2 * r + 1), y / (2 * r + 1)] as Pt;
+        });
+      // 面の向き（明るさ）は大きくならした輪郭から求める（凹凸で明るさが縞模様にならないように）
+      const smoothPts = smoothen(6);
+      // 奥の輪郭は、手前の切り口に近い形（凹凸だけ取る程度）から作る。ならしすぎると段差の所で面が太くなる
+      const inner = smoothen(2).map(([x, y]) => [vx + (x - vx) * k, vy + (y - vy) * k] as Pt);
+      innerPath = fmt(inner);
+      boxTransform = `translate(${vx} ${vy}) scale(${k}) translate(${-vx} ${-vy})`;
+
+      // 面の向き（穴の内側を向く法線）と光の向き（左上）から、面の明るさを決める
+      let area = 0;
+      for (let i = 0; i < n; i++) {
+        const a = outer[i];
+        const b = outer[(i + 1) % n];
+        area += a[0] * b[1] - b[0] * a[1];
+      }
+      const sgn = Math.sign(area) || 1;
+      const LIGHT: Pt = [-0.75, -0.66]; // 光の来る向き（左上）
+      const LEVELS = 48; // 明るさの段階（同じ段階の面はまとめて 1 つの図形にする）
+      const level = (i: number) => {
+        // ならした輪郭の前後の点から向きを求める
+        const a = smoothPts[(i - 3 + n) % n];
+        const b = smoothPts[(i + 4) % n];
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        const nx = (sgn * -(b[1] - a[1])) / len;
+        const ny = (sgn * (b[0] - a[0])) / len;
+        const dotL = nx * LIGHT[0] + ny * LIGHT[1]; // -1（影）〜 1（日なた）
+        return Math.round(((dotL + 1) / 2) * (LEVELS - 1));
+      };
+      const hex = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+      const mix = (a: string, b: string, t: number) =>
+        "#" +
+        hex(a)
+          .map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, "0"))
+          .join("");
+      const shade = (lv: number) => {
+        const t = lv / (LEVELS - 1);
+        return t < 0.5 ? mix(s.box!.dark, s.box!.mid, t * 2) : mix(s.box!.mid, s.box!.light, (t - 0.5) * 2);
+      };
+      // 同じ明るさが続く区間をまとめて、手前の輪郭と奥の輪郭の間の帯として描く。
+      // levels[i] は「点 i → 点 i+1」の辺の明るさ。明るさが変わる辺から数え始める。
+      const levels = outer.map((_, i) => level(i));
+      let start = 0;
+      for (let i = 0; i < n; i++) {
+        if (levels[i] !== levels[(i - 1 + n) % n]) {
+          start = i;
+          break;
+        }
+      }
+      let runStart = start;
+      for (let c = 1; c <= n; c++) {
+        const i = (start + c) % n;
+        if (c === n || levels[i] !== levels[runStart]) {
+          // 辺 runStart 〜 i-1 → 点 runStart 〜 i
+          const idx: number[] = [];
+          for (let m = runStart; ; m = (m + 1) % n) {
+            idx.push(m);
+            if (m === i && idx.length > 1) break;
+          }
+          const band = [...idx.map((m) => outer[m]), ...[...idx].reverse().map((m) => inner[m])];
+          faces.push({ d: fmt(band), fill: shade(levels[runStart]) });
+          runStart = i;
+        }
+      }
+    }
+
+    // 目印：穴の中心にある窓のマスに明かりを灯す。点（押せる範囲）と、穴が開き始める位置もその窓の中心にする
+    const wr = windowsAt(left + w / 2, top + h / 2, s.winCol);
+    const wx0 = wr.cells[0].x0;
+    const wx1 = wr.cells[wr.cells.length - 1].x1;
+    // 並んだ窓全体の枠（画像に対する %）と、その中での各マスの位置（枠に対する %）
+    const win = { x: pct(wx0, IMG_W), y: pct(wr.y0, IMG_H), w: pct(wx1 - wx0, IMG_W), h: pct(wr.y1 - wr.y0, IMG_H) };
+    const winCells = wr.cells.map((c) => ({
+      l: Number((((c.x0 - wx0) / (wx1 - wx0)) * 100).toFixed(3)),
+      w: Number((((c.x1 - c.x0) / (wx1 - wx0)) * 100).toFixed(3)),
+    }));
+    const dot = { x: pct((wx0 + wx1) / 2, IMG_W), y: pct((wr.y0 + wr.y1) / 2, IMG_H) };
+    const panel = { x: pct(left, IMG_W), y: pct(top, IMG_H), w: pct(w, IMG_W), h: pct(h, IMG_H) };
+    const room = await getImage({ src: s.img, width: 960, format: "webp", quality: 80 });
+
+    return { ...s, w, h, holePath, shadowPath, innerPath, boxTransform, faces, win, winCells, dot, panel, roomSrc: room.src };
+  }),
+);
+---
+
+<div class={`cutaway relative flex justify-center overflow-hidden ${className}`} data-parallax={strength} data-cutaway>
+  <div class="stage parallax-img relative h-full shrink-0 will-change-transform">
+    <Image
+      src={heroImg}
+      alt="建物の外観を描いたイラスト"
+      widths={[640, 960, 1280, 1600, 1920]}
+      sizes="(min-width: 1152px) 1088px, (min-width: 640px) 100vw, 200vw"
+      format="webp"
+      quality={80}
+      loading="eager"
+      fetchpriority="high"
+      class="h-full w-full object-cover"
+    />
+
+    {
+      SPOTS.map((s, i) => (
+        <div
+          class="spot"
+          data-spot={JSON.stringify({ zone: s.zone, panel: s.panel })}
+          style={[
+            `--px:${s.panel.x}%`,
+            `--py:${s.panel.y}%`,
+            `--pw:${s.panel.w}%`,
+            `--ph:${s.panel.h}%`,
+            `--ox:${(((s.dot.x - s.panel.x) / s.panel.w) * 100).toFixed(1)}%`,
+            `--oy:${(((s.dot.y - s.panel.y) / s.panel.h) * 100).toFixed(1)}%`,
+            `--dx:${s.dot.x}%`,
+            `--dy:${s.dot.y}%`,
+            `--wx:${s.win.x}%`,
+            `--wy:${s.win.y}%`,
+            `--ww:${s.win.w}%`,
+            `--wh:${s.win.h}%`,
+          ].join(";")}
+        >
+          {/* 目印：明かりの灯った窓（飾り。操作は下の .dot ボタンで受ける） */}
+          <span class="win" aria-hidden="true">
+            {s.winCells.map((c) => (
+              <span class="win-cell" style={`left:${c.l}%;width:${c.w}%`} />
+            ))}
+          </span>
+          <div class="panel" id={`cut-${s.id}`} aria-hidden="true">
+            <svg
+              class="room"
+              viewBox={`0 0 ${s.w} ${s.h}`}
+              preserveAspectRatio="none"
+              role="img"
+              aria-label={s.alt}
+            >
+              <defs>
+                {/* 穴の縁をぼかしたマスク（feather が 0 のときは、くっきりした切り口） */}
+                <filter id={`cut-feather-${s.id}`} x="-10%" y="-10%" width="120%" height="120%">
+                  <feGaussianBlur stdDeviation={s.feather} />
+                </filter>
+                <mask id={`cut-clip-${s.id}`} maskUnits="userSpaceOnUse" x="-60" y="-60" width={s.w + 120} height={s.h + 120}>
+                  <path
+                    d={s.holePath}
+                    fill="#fff"
+                    filter={s.feather > 0 ? `url(#cut-feather-${s.id})` : undefined}
+                  />
+                </mask>
+                <filter id={`cut-blur-${s.id}`} x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation={s.shadowBlur * s.depth} />
+                </filter>
+                <filter id={`cut-rim-${s.id}`} x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation={4 * s.depth} />
+                </filter>
+                {/* 奥の部屋の上側を暗くして、外からの光が届きにくい室内に見せる */}
+                <linearGradient id={`cut-depth-${s.id}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#0c110e" stop-opacity={Math.min(0.9, 0.6 * s.depth)} />
+                  <stop offset={Math.min(0.8, 0.5 * s.depth)} stop-color="#0c110e" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <g mask={`url(#cut-clip-${s.id})`}>
+                <rect width={s.w} height={s.h} fill="#202a24" />
+                {/* 部屋の絵。ページの表示が落ち着いてから読み込む（data-src → href）。奥行きの箱があるときは奥に縮めて置く */}
+                <g transform={s.boxTransform || undefined}>
+                  <image
+                    class="room-img"
+                    data-src={s.roomSrc}
+                    width={s.w}
+                    height={s.h}
+                    preserveAspectRatio="xMidYMid slice"
+                  />
+                </g>
+                <rect width={s.w} height={s.h} fill={`url(#cut-depth-${s.id})`} />
+                {/*
+                  残った外壁が、穴の奥へ落とす影（左上から光が当たる向き）。
+                  奥行きの箱があるときは、奥の輪郭の左上の縁から部屋へ落とす。
+                */}
+                <path
+                  d={`M-60 -60H${s.w + 60}V${s.h + 60}H-60Z ${s.innerPath || s.shadowPath}`}
+                  fill-rule="evenodd"
+                  fill={s.shadowColor}
+                  fill-opacity={s.shadowOpacity}
+                  filter={s.shadowBlur > 0 ? `url(#cut-blur-${s.id})` : undefined}
+                  transform={`translate(${s.shadowOffset[0]} ${s.shadowOffset[1]})`}
+                />
+                {/*
+                  壁の断面（厚み）：外壁を左上へ少しずらすと、穴の右と下の縁に帯が現れる。
+                  光は左上から当たるので、右と下の断面は明るいクリーム色にする。
+                */}
+                {s.faceDepth > 0 && (
+                  <g transform={`translate(${-s.faceDepth * 0.75} ${-s.faceDepth})`}>
+                    <path
+                      d={`M-60 -60H${s.w + 60}V${s.h + 60}H-60Z ${s.holePath}`}
+                      fill-rule="evenodd"
+                      fill={s.faceColor}
+                    />
+                    {/* 断面と部屋の境目に細い線を引き、切り口の角をはっきりさせる */}
+                    <path d={s.holePath} fill="none" stroke="#222223" stroke-opacity="0.45" stroke-width="1.2" />
+                  </g>
+                )}
+                {/*
+                  奥行きの箱：手前の輪郭と奥の輪郭の間を、壁の内側の面として塗る。
+                  上・左の面は影、下・右の面は光が当たる明るい色（面の向きで連続的に変える）。
+                */}
+                {s.faces.map((f) => (
+                  <path d={f.d} fill={f.fill} stroke={f.fill} stroke-width="0.8" stroke-linejoin="round" />
+                ))}
+                {s.innerPath && (
+                  <>
+                    {/* 壁の内側の面と部屋の境目（奥の角） */}
+                    <path d={s.innerPath} fill="none" stroke="#222223" stroke-opacity="0.55" stroke-width="1.2" />
+                    {/* 外壁と壁の内側の面の境目（手前の角）。明るい面が外壁に溶けないように */}
+                    <path d={s.holePath} fill="none" stroke="#222223" stroke-opacity="0.3" stroke-width="1.4" />
+                  </>
+                )}
+                {/* 穴の縁の内側に暗い線を引き、壁の厚みを表す（外側半分はマスクで隠れる） */}
+                {s.rim && (
+                  <path
+                    d={s.holePath}
+                    fill="none"
+                    stroke={s.rimColor}
+                    stroke-width={14 * s.depth}
+                    stroke-opacity={Math.min(0.8, 0.5 * s.depth)}
+                    filter={`url(#cut-rim-${s.id})`}
+                  />
+                )}
+              </g>
+            </svg>
+          </div>
+          <button
+            type="button"
+            class="dot"
+            data-index={i}
+            aria-expanded="false"
+            aria-controls={`cut-${s.id}`}
+            aria-label={`${s.label}の切り込みを見る`}
+          />
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .stage {
+    aspect-ratio: 16 / 10;
+  }
+
+  .spot {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .spot[data-open] {
+    z-index: 2;
+  }
+
+  /* 外壁の穴：目印のほうから広がるように開く。穴の縁は格子に合わせてあるので、大きさは変えない */
+  .panel {
+    position: absolute;
+    left: var(--px);
+    top: var(--py);
+    width: var(--pw);
+    height: var(--ph);
+    clip-path: circle(0% at var(--ox) var(--oy));
+    opacity: 0;
+    transition:
+      clip-path 0.5s cubic-bezier(0.4, 0, 0.6, 1),
+      opacity 0.45s ease;
+  }
+  .spot[data-open] .panel {
+    clip-path: circle(150% at var(--ox) var(--oy));
+    opacity: 1;
+    /* ゆっくり減速しながら開く */
+    transition:
+      clip-path 1s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.6s ease-out;
+  }
+  .room {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .room-img {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(1.18);
+    filter: saturate(1.1) contrast(1.03) brightness(1.03); /* 少しだけ鮮やかに */
+    /* のぞき込み：マウスと反対へ少しずれる（--peek-x / --peek-y はスクリプトが設定） */
+    translate: var(--peek-x, 0%) var(--peek-y, 0%);
+    transition:
+      transform 1.3s cubic-bezier(0.22, 1, 0.36, 1),
+      translate 0.5s ease-out;
+  }
+  .spot[data-open] .room-img {
+    transform: scale(1.08); /* のぞき込みでずれても縁が見えない余白（各辺 4%） */
+  }
+
+  /*
+    目印：明かりの灯った窓。夕方に外から見たオフィスの照明のように、外壁の窓のマスが内側から光る。
+    光は窓の枠の中だけに収め、外へはにじませない。
+  */
+  .win {
+    position: absolute;
+    left: var(--wx);
+    top: var(--wy);
+    width: var(--ww);
+    height: var(--wh);
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  /*
+    窓から外へ漏れる光：窓 3 マスより上下左右に広く、暖かい光がやわらかくにじむ（窓の後ろに重ねる）。
+    明るさは、点いている窓の割合（--lit: 0〜1。スクリプトが設定）に合わせて変わる。
+  */
+  .win::before {
+    content: "";
+    position: absolute;
+    inset: -140% -38%;
+    background: radial-gradient(
+      ellipse closest-side,
+      rgb(255 214 110 / 0.6) 0%,
+      rgb(255 214 110 / 0.3) 45%,
+      rgb(255 214 110 / 0.1) 75%,
+      rgb(255 214 110 / 0) 100%
+    );
+    filter: blur(3px);
+    opacity: calc(0.15 + 0.85 * var(--lit, 1));
+    transition: opacity 1.4s cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  /* JS が動くときは、消えた状態から始めて、窓が 1 つずつ点いていく */
+  :global(.js) .win {
+    --lit: 0;
+  }
+  /* 横に並んだ窓の 1 マス。格子の線は隠さない（マスの内側だけが光る） */
+  .win-cell {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    /* 照明の色（明るい暖かい黄色 #ffdd80。クリーム色の外壁の上でもはっきり見える）が、窓の縁に向かってやわらかく薄れる。窓の外へのにじみは .win::before が受け持つ */
+    background: radial-gradient(
+      ellipse farthest-side at center,
+      #ffdd80 55%,
+      rgb(255 221 128 / 0.85) 88%,
+      rgb(255 221 128 / 0.65) 100%
+    );
+    filter: blur(1.2px);
+    transition: opacity 1.2s cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  /*
+    窓 1 マスずつ、スクリプトがばらばらのタイミングで点けたり（.is-on）消したりする。
+    消えているときは、ほんのり明かりが残る程度にする。
+  */
+  :global(.js) .win-cell {
+    opacity: 0.15;
+  }
+  :global(.js) .win-cell.is-on {
+    opacity: 1;
+  }
+  /* 窓の中心ほど明るい照明 */
+  .win-cell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(closest-side, #fffdf0 0%, #fff1bd 65%, rgb(255 241 189 / 0) 100%);
+  }
+  /* ときどき、並んだ窓全体がゆらっと瞬く */
+  .win.is-flicker {
+    animation: cutaway-flicker 1.4s ease-in-out 1;
+  }
+  .spot[data-open] .win {
+    opacity: 0;
+  }
+  :global(html:not(.js)) .win {
+    display: none;
+  }
+
+  /* 押せる範囲（44px）。見た目は .win が受け持つ */
+  .dot {
+    position: absolute;
+    left: var(--dx);
+    top: var(--dy);
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    border-radius: 9999px;
+    pointer-events: auto;
+    cursor: pointer;
+    background: transparent;
+    transition: opacity 0.3s;
+  }
+  .dot:focus-visible {
+    outline: 2px solid var(--deep);
+    outline-offset: -6px;
+  }
+  .spot[data-open] .dot:not(:focus-visible) {
+    opacity: 0;
+  }
+  :global(html:not(.js)) .dot {
+    display: none;
+  }
+
+  /* 古い蛍光灯のような、ゆらっとした瞬き（1 回分）。急に切り替えず、なめらかに明るさが揺れる */
+  @keyframes cutaway-flicker {
+    0%,
+    100% {
+      filter: brightness(1);
+    }
+    25% {
+      filter: brightness(0.8);
+    }
+    45% {
+      filter: brightness(0.96);
+    }
+    65% {
+      filter: brightness(0.86);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel,
+    .spot[data-open] .panel,
+    .room-img {
+      transition: none;
+    }
+    .room-img,
+    .spot[data-open] .room-img {
+      transform: none;
+      translate: none;
+    }
+    .win,
+    .win::before,
+    .win-cell {
+      animation: none;
+      transition: none;
+    }
+    /* 動きを減らす設定のときは、すべての窓を点いたままにする */
+    :global(.js) .win {
+      --lit: 1;
+    }
+    :global(.js) .win-cell {
+      opacity: 1;
+    }
+  }
+</style>
+
+<script>
+  type Rect = { x: number; y: number; w: number; h: number };
+  type Zone = { x0: number; x1: number; y0: number; y1: number };
+
+  const root = document.querySelector<HTMLElement>("[data-cutaway]");
+  const stage = root?.querySelector<HTMLElement>(".stage");
+
+  if (root && stage) {
+    const spots = Array.from(root.querySelectorAll<HTMLElement>("[data-spot]"));
+    const data = spots.map((el) => JSON.parse(el.dataset.spot ?? "{}") as { zone: Zone; panel: Rect });
+    let active = -1;
+    let pending = -1;
+    let timer = 0;
+    let lastPointer = "mouse";
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const PEEK = 3.5; // のぞき込みでずらす最大量（絵の大きさに対する %。CSS の余白 4% より小さく）
+
+    // 目印の窓の明かり：窓 1 マスずつ、ばらばらの（毎回ランダムな）タイミングで点いたり消えたりする。
+    //   ・ページを開くと、消えた状態から 1 つずつ点いていく
+    //   ・点いている時間は長め。ときどき 1 マスがゆっくり消えて、しばらくしてまた点く
+    //   ・目印が真っ暗にならないよう、同じ並びで同時に消えるのは 1 マスまで
+    //   ・ときどき並び全体がゆらっと瞬く
+    // 動きを減らす設定のときは、すべて点いたままにする。
+    {
+      const rand = (a: number, b: number) => a + Math.random() * (b - a);
+      root.querySelectorAll<HTMLElement>(".win").forEach((win) => {
+        const cells = Array.from(win.querySelectorAll<HTMLElement>(".win-cell"));
+        const isOn = (c: HTMLElement) => c.classList.contains("is-on");
+        // 点いている窓の割合を、まわりににじむ光の明るさに使う
+        const update = () => win.style.setProperty("--lit", String(cells.filter(isOn).length / cells.length));
+
+        if (reduceMotion) {
+          cells.forEach((c) => c.classList.add("is-on"));
+          update();
+          return;
+        }
+
+        cells.forEach((cell) => {
+          const turnOn = () => {
+            cell.classList.add("is-on");
+            update();
+            window.setTimeout(turnOff, rand(9000, 20000)); // 点いている時間
+          };
+          const turnOff = () => {
+            // ほかの窓がすべて点いているときだけ消す（同時に消えるのは 1 マスまで）
+            if (cells.some((c) => c !== cell && !isOn(c))) {
+              window.setTimeout(turnOff, rand(2500, 6000));
+              return;
+            }
+            cell.classList.remove("is-on");
+            update();
+            window.setTimeout(turnOn, rand(1500, 4000)); // 消えている時間
+          };
+          window.setTimeout(turnOn, rand(300, 2800)); // 最初に点くまでの時間
+        });
+
+        // ときどき並び全体がゆらっと瞬く（同じクラスを付け直してアニメーションをやり直す）
+        const flicker = () =>
+          window.setTimeout(() => {
+            win.classList.remove("is-flicker");
+            void win.offsetWidth;
+            win.classList.add("is-flicker");
+            flicker();
+          }, rand(15000, 30000));
+        flicker();
+      });
+    }
+
+    // 部屋の絵は、トップ画像の表示を邪魔しないよう、ページが落ち着いてから（または触れたとき）読み込む
+    let roomsLoaded = false;
+    const loadRooms = () => {
+      if (roomsLoaded) return;
+      roomsLoaded = true;
+      root.querySelectorAll<SVGImageElement>(".room-img").forEach((img) => {
+        if (img.dataset.src) img.setAttribute("href", img.dataset.src);
+      });
+    };
+    const loadWhenIdle = () => {
+      if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(loadRooms);
+      else setTimeout(loadRooms, 300);
+    };
+    if (document.readyState === "complete") loadWhenIdle();
+    else window.addEventListener("load", loadWhenIdle, { once: true });
+    root.addEventListener("pointerenter", loadRooms, { once: true });
+    root.addEventListener("focusin", loadRooms, { once: true });
+
+    const setActive = (i: number) => {
+      if (i === active) return;
+      if (i >= 0) loadRooms();
+      active = i;
+      spots.forEach((el, j) => {
+        const on = j === i;
+        el.style.removeProperty("--peek-x");
+        el.style.removeProperty("--peek-y");
+        el.toggleAttribute("data-open", on);
+        el.querySelector(".panel")?.setAttribute("aria-hidden", String(!on));
+        el.querySelector(".dot")?.setAttribute("aria-expanded", String(on));
+      });
+    };
+
+    // 画面上の位置 → 画像に対する % → どの階か。開いている穴の上にいる間は、その階のまま。
+    const toPct = (e: MouseEvent) => {
+      const r = stage.getBoundingClientRect();
+      return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
+    };
+    const pick = (e: MouseEvent) => {
+      const { x, y } = toPct(e);
+      if (active >= 0) {
+        const p = data[active].panel;
+        if (x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h) return active;
+      }
+      return data.findIndex(({ zone: z }) => x >= z.x0 && x <= z.x1 && y >= z.y0 && y < z.y1);
+    };
+
+    const schedule = (i: number, delay: number) => {
+      if (i === pending) return;
+      pending = i;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setActive(i), delay);
+    };
+
+    root.addEventListener("pointerdown", (e) => {
+      lastPointer = e.pointerType;
+    });
+
+    // のぞき込み：開いている穴の中心からのずれに応じて、中の絵を反対方向へ少し動かす
+    const peek = (e: MouseEvent) => {
+      if (reduceMotion || active < 0) return;
+      const { x, y } = toPct(e);
+      const p = data[active].panel;
+      const clamp = (v: number) => Math.max(-1, Math.min(1, v));
+      const nx = clamp((x - (p.x + p.w / 2)) / (p.w / 2));
+      const ny = clamp((y - (p.y + p.h / 2)) / (p.h / 2));
+      spots[active].style.setProperty("--peek-x", `${(-nx * PEEK).toFixed(2)}%`);
+      spots[active].style.setProperty("--peek-y", `${(-ny * PEEK).toFixed(2)}%`);
+    };
+
+    // マウス：乗せたら開き、外れたら閉じる（通り過ぎただけで開かないよう少し待つ）
+    root.addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "mouse") return;
+      const i = pick(e);
+      schedule(i, i < 0 ? 160 : 90);
+      peek(e);
+    });
+    root.addEventListener("pointerleave", (e) => {
+      if (e.pointerType !== "mouse") return;
+      schedule(-1, 120);
+    });
+
+    root.addEventListener("click", (e) => {
+      const btn = (e.target as Element).closest<HTMLElement>(".dot");
+      // キーボード（Enter / Space）
+      if (e.detail === 0 && btn) {
+        const i = Number(btn.dataset.index);
+        setActive(i === active ? -1 : i);
+        return;
+      }
+      // マウスは乗せた時点で開いているので、点を押したときだけ開いた状態を保つ
+      if (lastPointer === "mouse") {
+        if (btn) setActive(Number(btn.dataset.index));
+        return;
+      }
+      // タッチ：その階をタップで開き、もう一度タップで閉じる
+      const i = pick(e);
+      setActive(i === active ? -1 : i);
+    });
+
+    // キーボード：Tab でフォーカスしたら開き、外へ出たら閉じる。Esc で閉じる。
+    root.addEventListener("focusin", (e) => {
+      const btn = (e.target as Element).closest<HTMLElement>(".dot");
+      if (btn?.matches(":focus-visible")) setActive(Number(btn.dataset.index));
+    });
+    root.addEventListener("focusout", (e) => {
+      if (!root.contains(e.relatedTarget as Node | null)) setActive(-1);
+    });
+    root.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setActive(-1);
+    });
+
+    // タッチで外側をタップしたら閉じる
+    document.addEventListener("click", (e) => {
+      if (!root.contains(e.target as Node)) setActive(-1);
+    });
+  }
+</script>

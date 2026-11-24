@@ -48,6 +48,14 @@ const ogUrl = new URL(ogImage, Astro.site);
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
+    <!-- 構造化データ（組織の情報）。個人名は判断事項 #1 の決定後に追加する -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: Astro.site ? Astro.site.toString() : undefined,
+      description: DEFAULT_DESC,
+    })}></script>
 
     <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:type" content={type} />
