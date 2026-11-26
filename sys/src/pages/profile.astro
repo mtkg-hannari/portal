@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import Reveal from "../components/Reveal.astro";
 import CoconalaCard from "../components/CoconalaCard.astro";
 import Credentials from "../components/Credentials.astro";
+import ProfileDesk from "../components/ProfileDesk.astro";
 import { PROFILE } from "../profile";
 
 const base = import.meta.env.BASE_URL;
@@ -38,6 +39,8 @@ const personLd = {
     </p>
     <div class="mt-6 h-px w-full bg-[var(--border)]"></div>
     <script type="application/ld+json" set:html={JSON.stringify(personLd)}></script>
+
+    <ProfileDesk />
 
     <Credentials class="mt-12 px-0 sm:px-0" />
 

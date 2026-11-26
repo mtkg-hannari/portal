@@ -1,0 +1,508 @@
+---
+import type { ImageMetadata } from "astro";
+import {
+  defaultDeskLighting, defaultDeskTheme, deskLightingLabels, deskLightingModes, deskThemeNames, deskThemes,
+  type DeskLighting, type DeskTheme,
+} from "../profile-desk-themes";
+import { defaultDeskView, deskPosterFilename, deskViews, type DeskView } from "../profile-desk-views";
+
+const images = import.meta.glob<ImageMetadata>("../assets/images/profile-desk-*.webp", {
+  eager: true,
+  import: "default",
+});
+const views = Object.keys(deskViews) as DeskView[];
+
+function getPoster(theme: DeskTheme, view: DeskView, lighting: DeskLighting) {
+  const filename = deskPosterFilename(theme, view, lighting);
+  const image = images[`../assets/images/${filename}`];
+  if (!image) throw new Error(`Missing profile desk poster: ${filename}`);
+  return image;
+}
+
+const initialPoster = getPoster(defaultDeskTheme, defaultDeskView, defaultDeskLighting);
+const posters = Object.fromEntries(deskThemeNames.map((theme) => [
+  theme,
+  Object.fromEntries(deskLightingModes.map((lighting) => [
+    lighting,
+    Object.fromEntries(views.map((view) => [view, getPoster(theme, view, lighting).src])),
+  ])),
+]));
+---
+
+<div
+  class="profile-desk"
+  data-profile-desk
+  data-theme={defaultDeskTheme}
+  data-lighting={defaultDeskLighting}
+  data-posters={JSON.stringify(posters)}
+  style={{ "--poster-background": deskThemes[defaultDeskTheme].background }}
+>
+  <div class="desk-viewport" aria-hidden="true">
+    <img class="desk-poster" src={initialPoster.src} width={initialPoster.width} height={initialPoster.height} alt="" decoding="async" draggable="false" />
+    <canvas class="desk-canvas"></canvas>
+    <canvas class="desk-light-overlay" hidden></canvas>
+  </div>
+  <div class="desk-switches" hidden>
+    <div class="desk-indicators" role="group" aria-label="デスクの配色">
+      {deskThemeNames.map((theme) => (
+        <button
+          class="desk-indicator"
+          type="button"
+          data-desk-theme={theme}
+          aria-label={deskThemes[theme].label}
+          title={deskThemes[theme].label}
+          aria-pressed={theme === defaultDeskTheme ? "true" : "false"}
+          style={{ "--swatch": deskThemes[theme].swatch }}
+        ></button>
+      ))}
+    </div>
+    <div class="desk-options desk-lighting" role="group" aria-label="部屋の明るさ">
+      {deskLightingModes.map((lighting) => (
+        <button type="button" data-desk-lighting={lighting} aria-pressed={lighting === defaultDeskLighting ? "true" : "false"}>
+          {deskLightingLabels[lighting]}
+        </button>
+      ))}
+    </div>
+  </div>
+  {import.meta.env.DEV && (
+    <div class="desk-controls" hidden>
+      <div class="desk-options" role="group" aria-label="開発用の配色">
+        {deskThemeNames.map((theme) => (
+          <button type="button" data-desk-theme={theme} aria-pressed={theme === defaultDeskTheme ? "true" : "false"}>
+            {deskThemes[theme].label}
+          </button>
+        ))}
+      </div>
+      <div class="desk-options" role="group" aria-label="デスクを見る方向">
+        <button type="button" data-desk-view="left" aria-pressed="false">左上から</button>
+        <button type="button" data-desk-view="front" aria-pressed="false">正面</button>
+        <button type="button" data-desk-view="standard" aria-pressed="true">標準</button>
+        <button type="button" data-desk-view="right" aria-pressed="false">右上から</button>
+      </div>
+      <p class="desk-hint">左右にドラッグで回転</p>
+      <button class="desk-playback" type="button" hidden>コードを一時停止</button>
+    </div>
+  )}
+</div>
+
+<style>
+  .profile-desk {
+    position: relative;
+    margin-top: 2rem;
+  }
+
+  .desk-viewport {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 1.25rem;
+    aspect-ratio: 16 / 9;
+    background: var(--poster-background);
+  }
+
+  .desk-poster,
+  .desk-canvas,
+  .desk-light-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .desk-poster {
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  .desk-light-overlay {
+    pointer-events: none;
+    object-fit: cover;
+  }
+
+  .desk-viewport[data-rotate] {
+    cursor: grab;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .desk-viewport[data-dragging] {
+    cursor: grabbing;
+  }
+
+  .desk-canvas,
+  [data-live] .desk-poster {
+    visibility: hidden;
+  }
+
+  [data-live] .desk-canvas {
+    visibility: visible;
+  }
+
+  .desk-viewport :global(.desk-editor-preview) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-width: none;
+    transform-origin: 0 0;
+    pointer-events: none;
+  }
+
+  .desk-controls:not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.45rem;
+    padding-top: 0.65rem;
+  }
+
+  .desk-switches:not([hidden]) {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem 0.85rem;
+    margin-top: 0.45rem;
+  }
+
+  .desk-indicators {
+    display: flex;
+  }
+
+  .desk-lighting button {
+    min-width: 2.125rem;
+    min-height: 1.75rem;
+  }
+
+  .desk-indicator {
+    display: grid;
+    place-items: center;
+    width: 2.125rem;
+    padding: 0;
+  }
+
+  .desk-indicator::before {
+    content: "";
+    width: 0.75rem;
+    height: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--swatch), #482a39 35%);
+    border-radius: 50%;
+    background: var(--swatch);
+  }
+
+  .desk-indicator[aria-pressed="true"]::before {
+    outline: 2px solid #482a39;
+    outline-offset: 3px;
+  }
+
+  .desk-indicator:hover::before {
+    transform: scale(1.12);
+  }
+
+  .desk-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+    padding: 0.2rem;
+    border: 1px solid var(--border);
+    border-radius: 2rem;
+    background: #fffaf1;
+    color: #482a39;
+  }
+
+  .desk-hint {
+    align-self: center;
+    font-size: 0.75rem;
+    color: var(--dim);
+  }
+
+  .desk-playback {
+    border: 1px solid var(--border);
+    background: #fffaf1;
+    color: #482a39;
+    align-self: center;
+  }
+
+  button {
+    min-height: 2.125rem;
+    padding-inline: 0.65rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .desk-options button[aria-pressed="true"] {
+    background: #482a39;
+    color: #fffaf1;
+  }
+
+  button:focus-visible {
+    outline: 2px solid #482a39;
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 40rem) {
+    .desk-viewport {
+      border-radius: 0.9rem;
+    }
+  }
+</style>
+
+<script>
+  import { createDeskEditor } from "../profile-desk-editor";
+  import { createDeskLightOverlay, createDeskWindowMotion } from "../profile-desk-window";
+  import { defaultDeskLighting, defaultDeskTheme, deskThemes, type DeskLighting, type DeskTheme } from "../profile-desk-themes";
+  import { closestDeskView, defaultDeskView, deskRotationLimit, deskViews, type DeskProjection, type DeskView } from "../profile-desk-views";
+  import dayLandscape from "../assets/images/profile-desk-countryside.webp?url";
+  import nightLandscape from "../assets/images/profile-desk-countryside-night.webp?url";
+  import leftLight from "../assets/images/profile-window-light-left.png?url";
+  import frontLight from "../assets/images/profile-window-light-front.png?url";
+  import standardLight from "../assets/images/profile-window-light-standard.png?url";
+  import rightLight from "../assets/images/profile-window-light-right.png?url";
+  import screenPositions from "../profile-desk-screen.json";
+  import type { createProfileDesk } from "../profile-desk";
+
+  const root = document.querySelector<HTMLElement>("[data-profile-desk]");
+  const viewport = root?.querySelector<HTMLElement>(".desk-viewport");
+  const canvas = viewport?.querySelector<HTMLCanvasElement>(".desk-canvas");
+  const poster = viewport?.querySelector("img");
+  const switches = root?.querySelector<HTMLElement>(".desk-switches");
+  const lightCanvas = viewport?.querySelector<HTMLCanvasElement>(".desk-light-overlay");
+  const controls = root?.querySelector<HTMLElement>(".desk-controls");
+  const playback = controls?.querySelector<HTMLButtonElement>(".desk-playback");
+
+  if (root && viewport && canvas && poster && switches && lightCanvas && root.dataset.posters) {
+    const posters = JSON.parse(root.dataset.posters) as Record<DeskTheme, Record<DeskLighting, Record<DeskView, string>>>;
+    const projections = screenPositions as Record<DeskView, DeskProjection>;
+    let theme: DeskTheme = defaultDeskTheme;
+    let lighting: DeskLighting = defaultDeskLighting;
+    let view: DeskView = defaultDeskView;
+    let angle: number = deskViews[defaultDeskView];
+    let desk: Awaited<ReturnType<typeof createProfileDesk>> | undefined;
+    let frame = 0;
+    let timer: number | undefined;
+    let codeTime = 0;
+    let paused = false;
+    let inView = false;
+    let started = false;
+    let drag: { pointerId: number; startX: number; startAngle: number } | undefined;
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    const colors = root.querySelectorAll<HTMLButtonElement>("[data-desk-theme]");
+    const lightButtons = switches.querySelectorAll<HTMLButtonElement>("[data-desk-lighting]");
+    const angles = root.querySelectorAll<HTMLButtonElement>("[data-desk-view]");
+    const editor = createDeskEditor();
+    const lightOverlay = createDeskLightOverlay(lightCanvas, {
+      left: leftLight, front: frontLight, standard: standardLight, right: rightLight,
+    });
+    const windowMotion = createDeskWindowMotion(() => {
+      if (desk) {
+        desk.refreshWindow();
+        draw();
+      } else if (windowMotion) {
+        lightOverlay?.draw(lighting, windowMotion.readPixels());
+      }
+    }, () => view);
+    if (editor) {
+      editor.canvas.className = "desk-editor-preview";
+      editor.canvas.hidden = true;
+      viewport.append(editor.canvas);
+      editor.paint(reducedMotion.matches ? undefined : codeTime);
+    }
+
+    function layoutEditor() {
+      if (!poster || !viewport) return;
+      const ready = !desk && poster.complete && poster.naturalWidth > 0 && poster.currentSrc === poster.src;
+      lightOverlay?.select(ready && !reducedMotion.matches ? view : undefined);
+      if (!editor) return;
+      editor.canvas.hidden = !ready;
+      if (!ready) return;
+      const width = viewport.clientWidth;
+      const height = viewport.clientHeight;
+      // Match the poster's object-fit: cover before projecting the editor.
+      const scale = Math.max(width / poster.naturalWidth, height / poster.naturalHeight);
+      const imageWidth = scale * poster.naturalWidth;
+      const imageHeight = scale * poster.naturalHeight;
+      const [origin, right, bottom] = projections[view];
+      const matrix = [
+        (right[0] - origin[0]) * imageWidth / editor.canvas.width,
+        (right[1] - origin[1]) * imageHeight / editor.canvas.width,
+        (bottom[0] - origin[0]) * imageWidth / editor.canvas.height,
+        (bottom[1] - origin[1]) * imageHeight / editor.canvas.height,
+        origin[0] * imageWidth + (width - imageWidth) / 2,
+        origin[1] * imageHeight + (height - imageHeight) / 2,
+      ];
+      editor.canvas.style.transform = `matrix(${matrix.join(",")})`;
+    }
+    poster.addEventListener("load", layoutEditor);
+
+    function showPoster() {
+      if (poster) poster.src = posters[theme][lighting][view];
+      if (root) delete root.dataset.live;
+      desk = undefined;
+      layoutEditor();
+      syncAngleButtons();
+    }
+
+    function draw() {
+      if (!desk || frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        desk?.draw(angle);
+      });
+    }
+
+    function syncAngleButtons() {
+      for (const button of angles) {
+        const preset = button.dataset.deskView as DeskView;
+        const selected = desk ? Math.abs(deskViews[preset] - angle) < 0.5 : preset === view;
+        button.setAttribute("aria-pressed", String(selected));
+      }
+    }
+
+    function rotateTo(next: number) {
+      angle = Math.max(-deskRotationLimit, Math.min(deskRotationLimit, next));
+      const nextView = closestDeskView(angle);
+      if (nextView !== view) {
+        view = nextView;
+        if (!desk) return showPoster();
+      }
+      syncAngleButtons();
+      draw();
+    }
+
+    function syncWindowMotion() {
+      windowMotion?.setPlayback(inView && !document.hidden && !reducedMotion.matches, lighting);
+    }
+
+    function syncEditor() {
+      const canAnimate = Boolean(editor && !reducedMotion.matches);
+      if (playback) playback.hidden = !canAnimate;
+      if (!canAnimate || paused || !inView || document.hidden) {
+        if (timer !== undefined) window.clearInterval(timer);
+        timer = undefined;
+        return;
+      }
+      timer ??= window.setInterval(() => {
+        codeTime += 80;
+        editor?.paint(codeTime);
+        desk?.refreshScreen();
+        draw();
+      }, 80);
+    }
+
+    playback?.addEventListener("click", () => {
+      paused = !paused;
+      playback.textContent = paused ? "コードを再生" : "コードを一時停止";
+      syncEditor();
+    });
+
+    for (const button of colors) {
+      button.addEventListener("click", () => {
+        theme = button.dataset.deskTheme as DeskTheme;
+        for (const item of colors) item.setAttribute("aria-pressed", String(item.dataset.deskTheme === theme));
+        root.dataset.theme = theme;
+        if (lighting === "day") root.style.setProperty("--poster-background", deskThemes[theme].background);
+        if (!desk) return showPoster();
+        desk.setTheme(theme);
+        draw();
+      });
+    }
+    for (const button of lightButtons) {
+      button.addEventListener("click", () => {
+        const next = button.dataset.deskLighting as DeskLighting;
+        if (next === lighting) return;
+        lighting = next;
+        root.dataset.lighting = lighting;
+        root.style.setProperty("--poster-background", lighting === "night" ? "#273047" : deskThemes[theme].background);
+        for (const item of lightButtons) item.setAttribute("aria-pressed", String(item === button));
+        syncWindowMotion();
+        if (!desk) return showPoster();
+        desk.setLighting(lighting);
+        draw();
+      });
+    }
+    for (const button of angles) {
+      button.addEventListener("click", () => {
+        rotateTo(deskViews[button.dataset.deskView as DeskView]);
+      });
+    }
+    switches.hidden = false;
+    if (controls) controls.hidden = false;
+    viewport.dataset.rotate = "";
+
+    viewport.addEventListener("pointerdown", (event) => {
+      if (drag || !event.isPrimary || event.button !== 0) return;
+      drag = { pointerId: event.pointerId, startX: event.clientX, startAngle: angle };
+      viewport.setPointerCapture(event.pointerId);
+      viewport.dataset.dragging = "";
+    });
+    viewport.addEventListener("pointermove", (event) => {
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      rotateTo(drag.startAngle + (drag.startX - event.clientX) * 0.25);
+    });
+    function endDrag(event: PointerEvent) {
+      if (drag?.pointerId !== event.pointerId || !viewport) return;
+      drag = undefined;
+      delete viewport.dataset.dragging;
+    }
+    viewport.addEventListener("pointerup", endDrag);
+    viewport.addEventListener("pointercancel", endDrag);
+    viewport.addEventListener("lostpointercapture", endDrag);
+    reducedMotion.addEventListener("change", () => {
+      editor?.paint(reducedMotion.matches ? undefined : codeTime);
+      desk?.refreshScreen();
+      draw();
+      syncEditor();
+      syncWindowMotion();
+      layoutEditor();
+    });
+    document.addEventListener("visibilitychange", () => {
+      syncEditor();
+      syncWindowMotion();
+    });
+    canvas.addEventListener("webglcontextlost", showPoster);
+
+    new ResizeObserver(() => {
+      if (!desk) return layoutEditor();
+      if (!viewport.clientWidth || !viewport.clientHeight) return;
+      desk.resize(viewport.clientWidth, viewport.clientHeight);
+      draw();
+    }).observe(viewport);
+    layoutEditor();
+
+    async function start() {
+      if (!root || !viewport || !canvas) return;
+      try {
+        const { createProfileDesk } = await import("../profile-desk");
+        desk = await createProfileDesk(canvas, { day: dayLandscape, night: nightLandscape }, editor?.canvas, windowMotion?.canvas);
+        desk.setTheme(theme);
+        desk.setLighting(lighting);
+        desk.resize(viewport.clientWidth, viewport.clientHeight);
+        desk.draw(angle);
+        root.dataset.live = "";
+        layoutEditor();
+        syncAngleButtons();
+      } catch (error) {
+        if (import.meta.env.DEV) console.info("Profile desk is using an illustration", error);
+        showPoster();
+      }
+    }
+
+    if ("IntersectionObserver" in window) {
+      const visibility = new IntersectionObserver(([entry]) => {
+        inView = entry.isIntersecting;
+        syncEditor();
+        syncWindowMotion();
+        if (inView && !started) {
+          started = true;
+          void start();
+        }
+      });
+      visibility.observe(viewport);
+    } else {
+      inView = true;
+      syncEditor();
+      syncWindowMotion();
+      void start();
+    }
+  }
+</script>
