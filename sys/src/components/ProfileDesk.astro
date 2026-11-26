@@ -58,8 +58,17 @@ const posters = Object.fromEntries(deskThemeNames.map((theme) => [
     </div>
     <div class="desk-options desk-lighting" role="group" aria-label="部屋の明るさ">
       {deskLightingModes.map((lighting) => (
-        <button type="button" data-desk-lighting={lighting} aria-pressed={lighting === defaultDeskLighting ? "true" : "false"}>
-          {deskLightingLabels[lighting]}
+        <button type="button" data-desk-lighting={lighting} aria-label={deskLightingLabels[lighting]} title={deskLightingLabels[lighting]} aria-pressed={lighting === defaultDeskLighting ? "true" : "false"}>
+          {lighting === "day" ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42m0-14.14-1.42 1.42M6.35 17.65l-1.42 1.42"></path>
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.3 15.6A8.5 8.5 0 0 1 8.4 3.7 8.5 8.5 0 1 0 20.3 15.6Z"></path>
+            </svg>
+          )}
         </button>
       ))}
     </div>
@@ -168,8 +177,16 @@ const posters = Object.fromEntries(deskThemeNames.map((theme) => [
   }
 
   .desk-lighting button {
+    display: grid;
+    place-items: center;
     min-width: 2.125rem;
     min-height: 1.75rem;
+    padding: 0.3rem;
+  }
+
+  .desk-lighting svg {
+    width: 1.1rem;
+    height: 1.1rem;
   }
 
   .desk-indicator {

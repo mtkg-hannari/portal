@@ -120,7 +120,7 @@ export function createDeskScene(motion?: CanvasTexture) {
         float lampMask = (1.0 - smoothstep(0.0, ${deskLamp.radius}, lampDistance))
           * smoothstep(-0.42, -0.02, deskWorldPosition.y) * (1.0 - smoothstep(0.65, 1.5, deskWorldPosition.y));
         vec3 lampLight = diffuseColor.rgb * vec3(${deskLamp.color.join(", ")}) * lampMask * deskLamp;
-        vec3 meteorLight = diffuseColor.rgb * vec3(0.27, 0.39, 0.62) * lightMask * motionAlpha * deskLamp;
+        vec3 meteorLight = diffuseColor.rgb * vec3(0.58, 0.78, 1.15) * lightMask * motionAlpha * deskLamp;
         outgoingLight = reflectedLight.indirectDiffuse + reflectedLight.directDiffuse * direct + lampLight
           + totalEmissiveRadiance + meteorLight;
         outgoingLight *= deskPaint(deskWorldPosition, deskWood);

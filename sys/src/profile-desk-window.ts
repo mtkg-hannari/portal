@@ -4,7 +4,7 @@ import type { DeskView } from "./profile-desk-views";
 const width = 320;
 const height = 224;
 const outdoorObjectScale = 0.2;
-const birdStroke = 1.2;
+const birdStroke = 2;
 const birdDuration = 10_400;
 const meteorTravel = 450;
 const meteorFadeStart = 0.6;
@@ -78,7 +78,7 @@ export function createDeskWindowMotion(onPaint: () => void, getView: () => DeskV
     brush.translate(x, y);
     brush.rotate(-0.13 + flap * 0.16);
     brush.scale(size, size);
-    brush.globalAlpha = 0.9;
+    brush.globalAlpha = 1;
     brush.fillStyle = "#202538";
     brush.strokeStyle = brush.fillStyle;
     brush.lineWidth = birdStroke / size;
@@ -110,7 +110,7 @@ export function createDeskWindowMotion(onPaint: () => void, getView: () => DeskV
     const startY = height * meteor.startY;
     const endY = height * meteor.endY;
     const size = meteor.size * outdoorObjectScale;
-    const radius = 0.73 + 0.24 * meteor.size;
+    const radius = 1.15 + 0.3 * meteor.size;
     const t = age / meteorTravel;
     const progress = 0.35 * t + 0.65 * smoothstep(t);
     const fade = Math.max(0, (t - meteorFadeStart) / (1 - meteorFadeStart));
@@ -151,7 +151,7 @@ export function createDeskWindowMotion(onPaint: () => void, getView: () => DeskV
       if (elapsed >= duration) {
         frame = 0;
         clear();
-        wait = window.setTimeout(play, night ? 9500 : 3000);
+        wait = window.setTimeout(play, night ? 5000 : 1500);
         return;
       }
       if (now - lastPaint >= 30) {
@@ -255,7 +255,7 @@ export function createDeskLightOverlay(canvas: HTMLCanvasElement, urls: Record<D
         image.data[offset] = r;
         image.data[offset + 1] = g;
         image.data[offset + 2] = b;
-        image.data[offset + 3] = motion[samples[index]] * strengths[index] / 255 * (night ? 0.63 : 0.78);
+        image.data[offset + 3] = motion[samples[index]] * strengths[index] / 255 * (night ? 1 : 1.2);
       }
       brush.putImageData(image, 0, 0);
     },
