@@ -15,7 +15,6 @@
 import { Image, getImage } from "astro:assets";
 import heroImg from "../assets/images/mco7-1.webp";
 import rooftopImg from "../assets/images/rooftop-a-flat.webp";
-// 食堂とロビーは、建物のイラストと同じ画風で描き直した画像を使う
 import diningImg from "../assets/images/lp-dining-matched.webp";
 import lobbyImg from "../assets/images/lp-lobby-matched.webp";
 
@@ -41,6 +40,7 @@ const SPOTS_SRC = [
   {
     id: "rooftop",
     depth: 0.2, // 奥行きの強さ（1 が基準）
+    depthShade: 0.12, // 部屋の上部にかかる影の濃さ
     smooth: 0, // 輪郭のなめらかさ（0 は角丸のみ。増やすほど丸く、外壁の四角から離れる）
     shape: "polygon" as Shape, // 穴の形（polygon: 段々の輪郭 / ellipse: 楕円 / blend: 中間）
     blend: 0, // blend のときの楕円への寄せ具合（0〜1）
@@ -74,6 +74,7 @@ const SPOTS_SRC = [
   {
     id: "dining",
     depth: 0.9,
+    depthShade: 0.24,
     smooth: 0,
     shape: "blend" as Shape, // 段々と楕円の中間（rows の外枠を基準にする）
     blend: 0.1, // 楕円へ寄せる割合（0 が段々、1 が楕円）。低いほど外壁に沿う
@@ -81,7 +82,7 @@ const SPOTS_SRC = [
     seed: 7, // ランダムの種（値を変えると形が変わる）
     shadowBlur: 0, // ぼかしなし。くっきりした奥行きの影にする
     shadowOffset: [6, 8] as Pt, // 奥の部屋に落ちる影のずれ（奥の輪郭の左上から）
-    shadowOpacity: 0.6, // 奥の部屋に落ちる影の濃さ
+    shadowOpacity: 0.38, // 奥の部屋に落ちる影の濃さ
     rim: false, // 内側のぼかした縁の線は描かない
     // 切り絵のような外壁に合わせる：くっきりした切り口と、奥行きのある壁の内側の面
     feather: 0,
@@ -92,9 +93,9 @@ const SPOTS_SRC = [
     box: {
       vp: [0.38, 0.3], // 消失点：やや左上（下と右の面が広く、上と左の面が狭く見える）
       k: 0.98, // 奥の輪郭は手前の 98%（内側の面を細めに）
-      dark: "#45423a", // 上・左の面（影になる）
-      mid: "#b3ab95", // 光に対して横を向く面
-      light: "#ebe4cf", // 下・右の面（光が当たる。外壁の紙の色に近い）
+      dark: "#767d83", // 上・左の面（影になる）
+      mid: "#c1c1b4", // 光に対して横を向く面
+      light: "#f1e9d6", // 下・右の面（光が当たる。外壁の紙の色に近い）
     } as Box | null,
     winCol: -3, // 目印の窓を 3 マス左へ
     dy: 40, // 位置を下げる（画像 px）
@@ -106,18 +107,19 @@ const SPOTS_SRC = [
     alt: "8階の食堂のイラスト。窓際のテーブルで、人が食事を楽しんでいる",
     zone: { x0: 11, x1: 90, y0: 37.5, y1: 69 },
     rows: [
-      [445, 473, 607, 844],
-      [473, 522, 561, 890],
-      [522, 582, 537, 913],
-      [582, 640, 514, 936],
-      [640, 698, 537, 913],
-      [698, 735, 584, 867],
+      [445, 473, 632, 821],
+      [473, 522, 584, 867],
+      [522, 582, 561, 890],
+      [582, 640, 537, 913],
+      [640, 698, 561, 890],
+      [698, 735, 607, 844],
     ] as Row[],
   },
   {
     id: "lobby",
     depth: 0.9,
-    // 8階 食堂と同じ効果（くっきりした切り口、黒い硬い影、奥行きの箱）。
+    depthShade: 0.24,
+    // 8階 食堂と同じ効果（くっきりした切り口、淡い影、奥行きの箱）。
     // 形は以前の「外壁の段々に沿って角を丸めた形」に近づける（楕円に寄せず、ずらさず、角を 3 回丸める）
     smooth: 0,
     shape: "blend" as Shape,
@@ -126,7 +128,7 @@ const SPOTS_SRC = [
     seed: 7,
     shadowBlur: 0,
     shadowOffset: [6, 8] as Pt,
-    shadowOpacity: 0.6,
+    shadowOpacity: 0.38,
     rim: false,
     feather: 0,
     faceDepth: 0,
@@ -136,9 +138,9 @@ const SPOTS_SRC = [
     box: {
       vp: [0.38, 0.3],
       k: 0.98,
-      dark: "#45423a",
-      mid: "#b3ab95",
-      light: "#ebe4cf",
+      dark: "#767d83",
+      mid: "#c1c1b4",
+      light: "#f1e9d6",
     } as Box | null,
     winCol: -4, // 目印の窓を 4 マス左へ
     dy: 0,
@@ -149,9 +151,9 @@ const SPOTS_SRC = [
     alt: "1階のロビーのイラスト。黒い柱が並ぶ広い空間と、装飾のあるエレベーター",
     zone: { x0: 11, x1: 90, y0: 69, y1: 90 },
     rows: [
-      [829, 873, 1105, 1290],
-      [873, 919, 1051, 1337],
-      [919, 1050, 1028, 1313],
+      [829, 873, 1128, 1267],
+      [873, 919, 1081, 1313],
+      [919, 1050, 1051, 1290],
     ] as Row[],
   },
 ];
@@ -408,7 +410,7 @@ const SPOTS = await Promise.all(
       }
     }
 
-    // 目印：穴の中心にある窓のマスに明かりを灯す。点（押せる範囲）と、穴が開き始める位置もその窓の中心にする
+    // 目印：穴の近くにある窓に明かりを灯す。ボタンも同じ窓の中心に置く
     const wr = windowsAt(left + w / 2, top + h / 2, s.winCol);
     const wx0 = wr.cells[0].x0;
     const wx1 = wr.cells[wr.cells.length - 1].x1;
@@ -451,8 +453,6 @@ const SPOTS = await Promise.all(
             `--py:${s.panel.y}%`,
             `--pw:${s.panel.w}%`,
             `--ph:${s.panel.h}%`,
-            `--ox:${(((s.dot.x - s.panel.x) / s.panel.w) * 100).toFixed(1)}%`,
-            `--oy:${(((s.dot.y - s.panel.y) / s.panel.h) * 100).toFixed(1)}%`,
             `--dx:${s.dot.x}%`,
             `--dy:${s.dot.y}%`,
             `--wx:${s.win.x}%`,
@@ -495,7 +495,7 @@ const SPOTS = await Promise.all(
                 </filter>
                 {/* 奥の部屋の上側を暗くして、外からの光が届きにくい室内に見せる */}
                 <linearGradient id={`cut-depth-${s.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="#0c110e" stop-opacity={Math.min(0.9, 0.6 * s.depth)} />
+                  <stop offset="0" stop-color="#0c110e" stop-opacity={s.depthShade} />
                   <stop offset={Math.min(0.8, 0.5 * s.depth)} stop-color="#0c110e" stop-opacity="0" />
                 </linearGradient>
               </defs>
@@ -549,9 +549,9 @@ const SPOTS = await Promise.all(
                 {s.innerPath && (
                   <>
                     {/* 壁の内側の面と部屋の境目（奥の角） */}
-                    <path d={s.innerPath} fill="none" stroke="#222223" stroke-opacity="0.55" stroke-width="1.2" />
+                    <path d={s.innerPath} fill="none" stroke="#222223" stroke-opacity="0.35" stroke-width="1.2" />
                     {/* 外壁と壁の内側の面の境目（手前の角）。明るい面が外壁に溶けないように */}
-                    <path d={s.holePath} fill="none" stroke="#222223" stroke-opacity="0.3" stroke-width="1.4" />
+                    <path d={s.holePath} fill="none" stroke="#222223" stroke-opacity="0.22" stroke-width="1.4" />
                   </>
                 )}
                 {/* 穴の縁の内側に暗い線を引き、壁の厚みを表す（外側半分はマスクで隠れる） */}
@@ -597,26 +597,20 @@ const SPOTS = await Promise.all(
     z-index: 2;
   }
 
-  /* 外壁の穴：目印のほうから広がるように開く。穴の縁は格子に合わせてあるので、大きさは変えない */
+  /* イラストの読み込みが終わった切り込みを、輪郭全体でフェードインさせる */
   .panel {
     position: absolute;
     left: var(--px);
     top: var(--py);
     width: var(--pw);
     height: var(--ph);
-    clip-path: circle(0% at var(--ox) var(--oy));
     opacity: 0;
-    transition:
-      clip-path 0.5s cubic-bezier(0.4, 0, 0.6, 1),
-      opacity 0.45s ease;
+    transition: opacity 0.35s ease;
   }
-  .spot[data-open] .panel {
-    clip-path: circle(150% at var(--ox) var(--oy));
+  .spot[data-open][data-room-ready] .panel {
     opacity: 1;
-    /* ゆっくり減速しながら開く */
-    transition:
-      clip-path 1s cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 0.6s ease-out;
+    transition-duration: 1.3s;
+    transition-timing-function: ease-out;
   }
   .room {
     display: block;
@@ -634,6 +628,12 @@ const SPOTS = await Promise.all(
     transition:
       transform 1.3s cubic-bezier(0.22, 1, 0.36, 1),
       translate 0.5s ease-out;
+  }
+  #cut-dining .room-img {
+    filter: saturate(0.9) contrast(0.96) brightness(1.02);
+  }
+  #cut-lobby .room-img {
+    filter: none;
   }
   .spot[data-open] .room-img {
     transform: scale(1.08); /* のぞき込みでずれても縁が見えない余白（各辺 4%） */
@@ -762,7 +762,7 @@ const SPOTS = await Promise.all(
 
   @media (prefers-reduced-motion: reduce) {
     .panel,
-    .spot[data-open] .panel,
+    .spot[data-open][data-room-ready] .panel,
     .room-img {
       transition: none;
     }
@@ -861,7 +861,9 @@ const SPOTS = await Promise.all(
       if (roomsLoaded) return;
       roomsLoaded = true;
       root.querySelectorAll<SVGImageElement>(".room-img").forEach((img) => {
-        if (img.dataset.src) img.setAttribute("href", img.dataset.src);
+        if (!img.dataset.src) return;
+        img.addEventListener("load", () => img.closest(".spot")?.setAttribute("data-room-ready", ""), { once: true });
+        img.setAttribute("href", img.dataset.src);
       });
     };
     const loadWhenIdle = () => {
